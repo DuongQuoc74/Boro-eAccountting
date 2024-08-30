@@ -1,0 +1,10 @@
+﻿@if (Menu != null)
+{
+    foreach (var menuItem in Menu.Items)
+    {
+        if (menuItem.GroupName == null)
+        {
+            <FirstLevelNavMenuItem MenuItem="menuItem" />
+        }
+    }
+}

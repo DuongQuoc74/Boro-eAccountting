@@ -1,0 +1,356 @@
+﻿@page "/thamsohethong"
+@using Syncfusion.Blazor.DropDowns
+@using Syncfusion.Blazor.Grids
+@using Syncfusion.Blazor.Popups
+@using Syncfusion.Blazor.Inputs
+@using Syncfusion.Blazor.Buttons
+@using Blazored.LocalStorage;
+@using Volo.Abp.ObjectMapping
+@using tamkhoatech.ACWeb.Blazor.Pages.Common
+@using tamkhoatech.ACWeb.Constants
+@using tamkhoatech.ACWeb.Dto
+@using tamkhoatech.ACWeb.IService.IQuanLyHeThong
+
+@inject IObjectMapper _objectMapper
+@inject IJSRuntime JSRunTime
+@inject ILocalStorageService _localStorage
+@inject IThamSoHeThongService _thamSo
+
+
+<link rel="stylesheet" href="/Css/danh-sach-phieu.css">
+@if (hasRefreshed)
+{
+    <div @onkeyup="@OnKeyUp">
+        <div class="row gy-2 gx-3 align-items-center">
+            <div class="col-auto">
+                <h4>
+                    <label>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="25" height="25" fill="currentColor" class="bi bi-database-fill-add" viewBox="0 0 16 16">
+                            <path d="M12.5 16a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7m.5-5v1h1a.5.5 0 0 1 0 1h-1v1a.5.5 0 0 1-1 0v-1h-1a.5.5 0 0 1 0-1h1v-1a.5.5 0 0 1 1 0M8 1c-1.573 0-3.022.289-4.096.777C2.875 2.245 2 2.993 2 4s.875 1.755 1.904 2.223C4.978 6.711 6.427 7 8 7s3.022-.289 4.096-.777C13.125 5.755 14 5.007 14 4s-.875-1.755-1.904-2.223C11.022 1.289 9.573 1 8 1" />
+                            <path d="M2 7v-.839c.457.432 1.004.751 1.49.972C4.722 7.693 6.318 8 8 8s3.278-.307 4.51-.867c.486-.22 1.033-.54 1.49-.972V7c0 .424-.155.802-.411 1.133a4.51 4.51 0 0 0-4.815 1.843A12 12 0 0 1 8 10c-1.573 0-3.022-.289-4.096-.777C2.875 8.755 2 8.007 2 7m6.257 3.998L8 11c-1.682 0-3.278-.307-4.51-.867-.486-.22-1.033-.54-1.49-.972V10c0 1.007.875 1.755 1.904 2.223C4.978 12.711 6.427 13 8 13h.027a4.55 4.55 0 0 1 .23-2.002m-.002 3L8 14c-1.682 0-3.278-.307-4.51-.867-.486-.22-1.033-.54-1.49-.972V13c0 1.007.875 1.755 1.904 2.223C4.978 15.711 6.427 16 8 16c.536 0 1.058-.034 1.555-.097a4.5 4.5 0 0 1-1.3-1.905" />
+                        </svg>
+                        <strong>Danh sách tham số hệ thống</strong>
+                    </label>
+                </h4>
+            </div>
+        </div>
+        <div class="thong-ke">
+            <span>F3: Sửa <strong>|</strong> Ctrl + số thứ tự t/ứng của Tab : Chuyển tab </span>
+        </div>
+        <div class="row g-3">
+            <NavbarMenu Content="@ContentNavbarMenu"
+                        IsEdit="true" OnValidSubmitEdit="@EditAsync"
+                        IsRefresh="true" OnValidSubmitRefresh="@RefreshAsync"
+                        IsChuyenTab="true" OnValidSubmitChuyenTab="@ChuyenTabAsync"
+                        IsSearch="true" OnValidSubmitSearch="@SearchAsync"
+                        HelpUrl=@HelpUrl />
+        </div>
+        <div class="row g-3">
+            <SfTab ID="tham-so-tab" @bind-SelectedItem="@SelectedTab">
+                <TabItems>
+                    <TabEvents Selected="OnSelectTabAsync"></TabEvents>
+                    <TabItem>
+                        <ChildContent>
+                            <TabHeader Text="Thông tin cty"></TabHeader>
+                        </ChildContent>
+                    </TabItem>
+                    <TabItem>
+                        <ChildContent>
+                            <TabHeader Text="Hệ thống"></TabHeader>
+                        </ChildContent>
+                    </TabItem>
+                    <TabItem>
+                        <ChildContent>
+                            <TabHeader Text="Tài khoản"></TabHeader>
+                        </ChildContent>
+                    </TabItem>
+                    <TabItem>
+                        <ChildContent>
+                            <TabHeader Text="Tồn kho"></TabHeader>
+                        </ChildContent>
+                    </TabItem>
+                    <TabItem>
+                        <ChildContent>
+                            <TabHeader Text="Thuế"></TabHeader>
+                        </ChildContent>
+                    </TabItem>
+                    <TabItem>
+                        <ChildContent>
+                            <TabHeader Text="Sản xuất"></TabHeader>
+                        </ChildContent>
+                    </TabItem>
+                </TabItems>
+            </SfTab>
+            <SfGrid ID="tham-so-grid" @ref="SfGrid" DataSource="@ThamSoHeThongDtos" EnablePersistence="false" AllowSelection="true" AllowPaging="true" AllowSorting="true" AllowResizing="true" AllowReordering="true" ShowColumnChooser="true" Width="auto" Height="360">
+                <GridSelectionSettings CheckboxMode="CheckboxSelectionType.ResetOnRowClick" Type="Syncfusion.Blazor.Grids.SelectionType.Single"></GridSelectionSettings>
+                <GridEditSettings AllowAdding="false" AllowEditing="false" AllowDeleting="false"></GridEditSettings>
+                <GridPageSettings PageSize="50"></GridPageSettings>
+                <GridEvents OnRecordDoubleClick="RecordDoubleClickHandler" TValue="ThamSoHeThongDto"></GridEvents>
+                <GridColumns>
+                    <GridColumn Type="ColumnType.CheckBox" TextAlign="TextAlign.Center" Width="50"></GridColumn>
+                    <GridColumn Field=@nameof(ThamSoHeThongDto.Id) HeaderText="#" IsPrimaryKey="true" Visible="false" ShowInColumnChooser="false" TextAlign="TextAlign.Center" Width="120"></GridColumn>
+                    <GridColumn Field=@nameof(ThamSoHeThongDto.DienGiai) HeaderText="Diễn giải" ShowInColumnChooser="false" TextAlign="TextAlign.Left" Width="300"></GridColumn>
+                    <GridColumn Field=@nameof(ThamSoHeThongDto.GiaTri) HeaderText="Giá trị" TextAlign="TextAlign.Left" Width="400"></GridColumn>
+                </GridColumns>
+            </SfGrid>
+        </div>
+
+        <SfDialog ID="modalCreate" Width="640px" @bind-Visible="ShowModalEdit" AllowPrerender="true" IsModal="true">
+            <DialogTemplates>
+                <Header>
+                        <div class="title">
+                            <h1 class="modal-title fs-5">
+                                <img src="/images/Button/Sua.png" alt="icon" width="16" height="16">
+                                Chỉnh sửa
+                            </h1>
+                        </div>
+                </Header>
+                <Content>
+                    <div class="container">
+                        <EditForm Model="SelectThamSoHeThong" Context="editFormCN" OnValidSubmit="@SaveAsync">
+                            <DataAnnotationsValidator />
+                            <div class="mb-1">
+                                <div class="row">
+                                    <div class="col-sm-3">
+                                        <label for="DienGiai" class="form-label">Diễn giải <span class="text-danger">*</span></label>
+                                    </div>
+                                    <div class="col-sm-9">
+                                        <SfTextBox ID="DienGiai" CssClass="e-small" @bind-Value="@(SelectThamSoHeThong.DienGiai)" Enabled="false"></SfTextBox>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="mb-1">
+                                <div class="row">
+                                    <div class="col-sm-3">
+                                        <label for="GiaTri" class="form-label">Giá trị</label>
+                                    </div>
+                                    <div class="col-sm-9">
+                                        <SfTextBox ID="GiaTri" CssClass="e-small" @bind-Value="@(SelectThamSoHeThong.GiaTri)"></SfTextBox>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row-line"></div>
+                            <div class="d-flex">
+                                <button type="button" class="btn btn-sm btn-danger" @onclick="CloseModalEdit">Hủy</button>
+                                <button type="submit" class="btn btn-sm btn-primary">Nhận</button>
+                            </div>
+                        </EditForm>
+                    </div>
+                </Content>
+            </DialogTemplates>
+        </SfDialog>
+        <ModalErrorMessage ShowModalMessage="@ShowModalMessage" CheckMessage="@CheckMessage" TextMessage="@TextMessage"
+                           OnCloseMessage="CloseModalMessage" />
+    </div>
+}
+else
+{
+    <h3>Vui lòng chờ....</h3>
+}
+<style>
+    #navbarMenu-edit {
+        margin: 0 0 0 16px;
+    }
+
+    #tham-so-tab {
+        padding-top: 16px;
+        margin-bottom: -16px;
+    }
+
+    /*tab chi tiết */
+    .e-tab .e-tab-header .e-toolbar-item {
+        border: 1px solid #3273dc94 !important;
+        border-radius: 8px;
+    }
+
+    .e-tab .e-tab-header .e-toolbar-items:not(.e-tbar-pos) .e-toolbar-item:last-child {
+        margin: 0 2px !important;
+        border: 1px solid #3273dc94 !important;
+    }
+
+    .e-tab .e-tab-header .e-toolbar-item:not(.e-separator) {
+        margin: 0px 2px;
+    }
+
+    .e-tab .e-tab-header .e-toolbar-item .e-tab-text {
+        color: #495057;
+    }
+
+    .e-tab .e-tab-header .e-toolbar-item.e-active .e-tab-text,
+    .e-tab .e-tab-header .e-toolbar-item.e-active .e-tab-icon {
+        color: black !important;
+        font-weight: bold;
+    }
+
+    .e-tab .e-tab-header .e-toolbar-item .e-tab-wrap:hover {
+        background: #9bc3e0b0 !important;
+        border: 2px solid #3273dc94 !important;
+        border-radius: 6px;
+    }
+
+    .e-tab .e-tab-header .e-toolbar-item.e-active {
+        background: #9bc3e0b0;
+        border: 1px solid #3273dc94 !important;
+        border-radius: 6px;
+    }
+    /*tab chi tiết end*/
+</style>
+
+@code {
+    private string ContentNavbarMenu = "tham số hệ thống";
+    private string HelpUrl = "https://tamkhoatech.vn/huong-dan-su-dung/danh-sach-cac-tham-so/";
+    private bool hasRefreshed = false;
+    private bool ShowModalMessage = false;
+    private bool CheckMessage = false;
+    private string? TextMessage { set; get; }
+    private int SelectedTab { get; set; } = 0;
+    private SfGrid<ThamSoHeThongDto> SfGrid = new SfGrid<ThamSoHeThongDto>();
+    public List<ThamSoHeThongDto> ThamSoHeThongDtos = new List<ThamSoHeThongDto>();
+    private bool ShowModalEdit = false;
+    public ThamSoHeThongRequest SelectThamSoHeThong = new ThamSoHeThongRequest();
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!hasRefreshed)
+        {
+            ThamSoHeThongDtos = await _thamSo.GetListAsync("THONGTIN");
+            hasRefreshed = true;
+        }
+    }
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender)
+        {
+            await JSRunTime.InvokeVoidAsync("renameShowColumn", "Tìm kiếm...");
+            await JSRunTime.InvokeVoidAsync("getDotNetObjectReference", DotNetObjectReference.Create(this));
+        }
+    }
+    private async Task OnSelectTabAsync()
+    {
+        switch (SelectedTab)
+        {
+            case 0:
+                ThamSoHeThongDtos = await _thamSo.GetListAsync("THONGTIN");
+                break;
+            case 1:
+                ThamSoHeThongDtos = await _thamSo.GetListAsync("HETHONG");
+                break;
+            case 2:
+                ThamSoHeThongDtos = await _thamSo.GetListAsync("TAIKHOAN");
+                break;
+            case 3:
+                ThamSoHeThongDtos = await _thamSo.GetListAsync("TONKHO");
+                break;
+            case 4:
+                ThamSoHeThongDtos = await _thamSo.GetListAsync("THUE");
+                break;
+            case 5:
+                ThamSoHeThongDtos = await _thamSo.GetListAsync("SANXUAT");
+                break;
+            default:
+                ThamSoHeThongDtos = await _thamSo.GetListAsync("THONGTIN");
+                SelectedTab = 0;
+                break;
+        }
+        await this.SfGrid.Refresh();
+    }
+
+    private async Task OnKeyUp(KeyboardEventArgs args)
+    {
+        if (args.CtrlKey)
+        {
+            switch (args.Key)
+            {
+                case "1":
+                    ThamSoHeThongDtos = await _thamSo.GetListAsync("THONGTIN");
+                    SelectedTab = 0;
+                    break;
+                case "2":
+                    ThamSoHeThongDtos = await _thamSo.GetListAsync("HETHONG");
+                    SelectedTab = 1;
+                    break;
+                case "3":
+                    ThamSoHeThongDtos = await _thamSo.GetListAsync("TAIKHOAN");
+                    SelectedTab = 2;
+                    break;
+                case "4":
+                    ThamSoHeThongDtos = await _thamSo.GetListAsync("TONKHO");
+                    SelectedTab = 3;
+                    break;
+                case "5":
+                    ThamSoHeThongDtos = await _thamSo.GetListAsync("THUE");
+                    SelectedTab = 4;
+                    break;
+                case "6":
+                    ThamSoHeThongDtos = await _thamSo.GetListAsync("SANXUAT");
+                    SelectedTab = 5;
+                    break;
+                default:
+                    break;
+            }
+        }
+        else if(args.Key == "F3")
+        {
+           await this.EditAsync();
+        }
+    }
+    //Navbar menu
+    private async Task EditAsync()
+    {
+        var SelectedRecords = await SfGrid.GetSelectedRecordsAsync();
+        if (SelectedRecords.Count > 0)
+        {
+            SelectThamSoHeThong = _objectMapper.Map<ThamSoHeThongDto, ThamSoHeThongRequest>(await _thamSo.GetByIdAsync(SelectedRecords.First().Id));
+            ShowModalEdit = true;
+        }
+        else
+        {
+            TextMessage = "Bạn chưa chọn dòng.";
+            CheckMessage = false;
+            ShowModalMessage = true;
+        }
+        StateHasChanged();
+    }
+    private async Task SaveAsync()
+    {
+        var result = await _thamSo.UpdateAsync(SelectThamSoHeThong.Id, SelectThamSoHeThong.GiaTri);
+        TextMessage = result.Message;
+        CheckMessage = result.IsSuccessed;
+        ShowModalMessage = true;
+        if (result.IsSuccessed)
+        {
+            await this.OnSelectTabAsync();
+            ShowModalEdit = false;
+        }
+    
+    }
+    private void CloseModalEdit()
+    {
+        ShowModalEdit = false;
+    }
+    private async Task RefreshAsync()
+    {
+        await this.SfGrid.SearchAsync(string.Empty);
+        await this.OnSelectTabAsync();
+    }
+    private async Task ChuyenTabAsync()
+    {
+        SelectedTab++;
+        await this.OnSelectTabAsync();
+    }
+    //Call Back From Js function
+    [JSInvokable("searchInputNavbar")]
+    public async Task SearchAsync(string search)
+    {
+        await this.SfGrid.SearchAsync(search);
+    }
+    public async Task RecordDoubleClickHandler(RecordDoubleClickEventArgs<ThamSoHeThongDto> args)
+    {
+        SelectThamSoHeThong = _objectMapper.Map<ThamSoHeThongDto, ThamSoHeThongRequest>(await _thamSo.GetByIdAsync(args.RowData.Id));
+        ShowModalEdit = true;
+    }
+    private void CloseModalMessage()
+    {
+        ShowModalMessage = false;
+    }
+}

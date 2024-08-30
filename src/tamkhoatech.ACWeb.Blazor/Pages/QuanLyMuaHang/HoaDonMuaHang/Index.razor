@@ -1,0 +1,363 @@
+﻿@page "/hoadonmuahang"
+@using Blazored.LocalStorage
+@using Volo.Abp.ObjectMapping
+@using tamkhoatech.ACWeb.Blazor.Pages.Common
+@using tamkhoatech.ACWeb.Constants
+@using tamkhoatech.ACWeb.Dto
+@using tamkhoatech.ACWeb.IService
+@using tamkhoatech.ACWeb.IService.IQuanLyMuaHang
+
+@inject NavigationManager NavigationManager
+@inject ILocalStorageService _localStorage
+@inject IJSRuntime JSRunTime
+@inject IPhieuNhapService _phieuNhap
+@inject ICommonService _common
+@inject IObjectMapper _objectMapper
+
+<link rel="stylesheet" href="/Css/danh-sach-phieu.css">
+@if (hasRefreshed)
+{
+    <div class="row gy-2 gx-3 align-items-center">
+        <div class="col-auto">
+            <h4>
+                <label>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="25" height="25" fill="currentColor" class="bi bi-database-fill-add" viewBox="0 0 16 16">
+                        <path d="M12.5 16a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7m.5-5v1h1a.5.5 0 0 1 0 1h-1v1a.5.5 0 0 1-1 0v-1h-1a.5.5 0 0 1 0-1h1v-1a.5.5 0 0 1 1 0M8 1c-1.573 0-3.022.289-4.096.777C2.875 2.245 2 2.993 2 4s.875 1.755 1.904 2.223C4.978 6.711 6.427 7 8 7s3.022-.289 4.096-.777C13.125 5.755 14 5.007 14 4s-.875-1.755-1.904-2.223C11.022 1.289 9.573 1 8 1" />
+                        <path d="M2 7v-.839c.457.432 1.004.751 1.49.972C4.722 7.693 6.318 8 8 8s3.278-.307 4.51-.867c.486-.22 1.033-.54 1.49-.972V7c0 .424-.155.802-.411 1.133a4.51 4.51 0 0 0-4.815 1.843A12 12 0 0 1 8 10c-1.573 0-3.022-.289-4.096-.777C2.875 8.755 2 8.007 2 7m6.257 3.998L8 11c-1.682 0-3.278-.307-4.51-.867-.486-.22-1.033-.54-1.49-.972V10c0 1.007.875 1.755 1.904 2.223C4.978 12.711 6.427 13 8 13h.027a4.55 4.55 0 0 1 .23-2.002m-.002 3L8 14c-1.682 0-3.278-.307-4.51-.867-.486-.22-1.033-.54-1.49-.972V13c0 1.007.875 1.755 1.904 2.223C4.978 15.711 6.427 16 8 16c.536 0 1.058-.034 1.555-.097a4.5 4.5 0 0 1-1.3-1.905" />
+                    </svg>
+                    <strong>Hóa đơn mua dịch vụ. Từ ngày @TuNgay?.ToString("dd/MM/yyyy") đến @DenNgay?.AddDays(-1).ToString("dd/MM/yyyy")</strong>
+                </label>
+            </h4>
+        </div>
+    </div>
+    <br>
+    <div class="row g-3">
+        <NavbarMenu Content="@ContentNavbarMenu" IsAdd="true" OnValidSubmitAdd="@AddAsync" 
+                                         IsEdit="true" OnValidSubmitEdit="@EditAsync" 
+                                         IsDelete="true" OnValidSubmitDelete="@DeleteAsync"
+                                         IsPrint = "true" OnValidSubmitPrint="@PrintAsync"
+                                         IsTao="true" OnValidSubmitTao="@TaoChiAsync"
+                                         IsShowColumn="true" OnValidSubmitShowColumn="@ShowColumnAsync"
+                                         IsRefresh="true" OnValidSubmitRefresh="@RefreshAsync"
+                                         IsSearch="true" OnValidSubmitSearch="@SearchAsync"
+                                         HelpUrl=@HelpUrl />
+    </div>
+    <div class="thong-ke">
+        <p>
+            <span class="text-thongke">Số lượng chứng từ:</span> <span class="number-thongke">@TongTien.SoLuongChungTu</span> <strong>|</strong>
+            <span class="text-thongke">Tổng phát sinh:</span> <span class="number-thongke">@TongTien.TongTienPhatSinhVND?.ToString("N0")</span> <strong>|</strong>
+            <span class="text-thongke">Tổng phát sinh ngoại tệ:</span> <span class="number-thongke"> @TongTien.TongTienPhatSinh?.ToString("N2")</span>
+        </p>
+    </div>
+    <div class="row g-3">
+        <SfGrid ID="PN1" @ref="SfGridPN1" DataSource="@PhieuNhapDtos" AllowSelection="true" EnablePersistence="true" AllowPaging="true" AllowSorting="true" AllowResizing="true" AllowReordering="true" ShowColumnChooser="true" Width="auto" Height="360">
+            <GridColumnChooserSettings>
+                <FooterTemplate>
+                    @{
+                        var ContextData = context as ColumnChooserFooterTemplateContext;
+                        if (ContextData != null)
+                        {
+                            var visibles = ContextData.Columns.Where(x => x.Visible).Select(x => x.HeaderText).ToArray();
+                            var hiddens = ContextData.Columns.Where(x => !x.Visible).Select(x => x.HeaderText).ToArray();
+                            <SfButton IsPrimary="true" OnClick="@(async () => {
+                            await SfGridPN1.ShowColumnsAsync(visibles);
+                            await SfGridPN1.HideColumnsAsync(hiddens); })">Nhận</SfButton>
+                            <SfButton @onclick="@(async () => await ContextData.CancelAsync())">Hủy</SfButton>
+                        }
+                    }
+                </FooterTemplate>
+            </GridColumnChooserSettings>
+            <GridSelectionSettings CheckboxMode="CheckboxSelectionType.ResetOnRowClick" Type="Syncfusion.Blazor.Grids.SelectionType.Single"></GridSelectionSettings>
+            <GridEditSettings AllowAdding="false" AllowEditing="false" AllowDeleting="false"></GridEditSettings>
+            <GridPageSettings PageSize="10"></GridPageSettings>
+            <GridEvents OnRecordClick="RecordClickHandler" OnRecordDoubleClick="RecordDoubleClickHandler" TValue="PhieuNhapDto"></GridEvents>
+            <GridColumns>
+                <GridColumn Type="ColumnType.CheckBox" TextAlign="TextAlign.Center" Width="50"></GridColumn>
+                <GridColumn Field=@nameof(PhieuNhapDto.Id) HeaderText="#" IsPrimaryKey="true" Visible="false" ShowInColumnChooser="false" TextAlign="TextAlign.Left" Width="120"></GridColumn>
+                <GridColumn Field=@nameof(PhieuNhapDto.NgayHt) HeaderText="Ngày chứng từ" ShowInColumnChooser="false" Format="dd/MM/yyyy" TextAlign="TextAlign.Left" Width="120"></GridColumn>
+                <GridColumn Field=@nameof(PhieuNhapDto.Sopn) HeaderText="Số chứng từ" TextAlign="TextAlign.Left" Width="120"></GridColumn>
+                <GridColumn Field=@nameof(PhieuNhapDto.SoHd) HeaderText="Số hóa đơn" TextAlign="TextAlign.Left" Width="120"></GridColumn>
+                <GridColumn Field=@nameof(PhieuNhapDto.NgayHd) HeaderText="Ngày hóa đơn" Format="dd/MM/yyyy" TextAlign="TextAlign.Left" Width="120"></GridColumn>
+                <GridColumn Field=@nameof(PhieuNhapDto.DienGiai) HeaderText="Diễn giải" TextAlign="TextAlign.Left" Width="300"></GridColumn>
+                <GridColumn Field=@nameof(PhieuNhapDto.KhachHangUd) HeaderText="Mã khách" TextAlign="TextAlign.Left" Width="120"></GridColumn>
+                <GridColumn Field=@nameof(PhieuNhapDto.KhachHangNm) HeaderText="Tên khách" TextAlign="TextAlign.Left" Width="120"></GridColumn>
+                <GridColumn Field=@nameof(PhieuNhapDto.GhiCoTkUd) HeaderText="Mã nhập xuất" TextAlign="TextAlign.Left" Width="120"></GridColumn>
+                <GridColumn Field=@nameof(PhieuNhapDto.TienHangVND) HeaderText="Tiền hàng" Format="N0" TextAlign="TextAlign.Right" Width="120"></GridColumn>
+                <GridColumn Field=@nameof(PhieuNhapDto.ThueNkVND) HeaderText="Tiền thuế" Format="N0" TextAlign="TextAlign.Right" Width="120"></GridColumn>
+                <GridColumn Field=@nameof(PhieuNhapDto.TongTienVND) HeaderText="Tổng tiền" Format="N0" ShowInColumnChooser="false" TextAlign="TextAlign.Right" Width="120"></GridColumn>
+                <GridColumn Field=@nameof(PhieuNhapDto.NgoaiTeUd) HeaderText="Mã ngoại tệ" TextAlign="TextAlign.Left" Width="120"></GridColumn>
+                <GridColumn Field=@nameof(PhieuNhapDto.TiGia) HeaderText="Tỷ giá" Format="N2" TextAlign="TextAlign.Right" Width="120"></GridColumn>
+                <GridColumn Field=@nameof(PhieuNhapDto.TienHang) HeaderText="Tiền hàng ngoại tệ" Format="N2" TextAlign="TextAlign.Right" Width="120"></GridColumn>
+                <GridColumn Field=@nameof(PhieuNhapDto.ThueNk) HeaderText="Tiền thuế ngoại tệ" Format="N2" TextAlign="TextAlign.Right" Width="120"></GridColumn>
+                <GridColumn Field=@nameof(PhieuNhapDto.TongTien) HeaderText="Tổng tiền ngoại tệ" Format="N2" ShowInColumnChooser="false" TextAlign="TextAlign.Right" Width="120"></GridColumn>
+                <GridColumn Field=@nameof(PhieuNhapDto.HanTT) HeaderText="Hạn thanh toán" Format="N0" TextAlign="TextAlign.Right" Width="120"></GridColumn>
+                <GridColumn HeaderText="Chi tiết" TextAlign="TextAlign.Center" Width="80">
+                    <Template>
+                        <SfDropDownList TValue="int?" TItem="HoaDonMuaHangDto" Placeholder="Xem" DataSource="@HoaDonMuaHangDtos" CssClass="e-multi-column e-small" PopupWidth="1300" PopupHeight="300">
+                            <DropDownListTemplates TItem="HoaDonMuaHangDto">
+                                <HeaderTemplate>
+                                    <table class="header-combo">
+                                        <thead>
+                                            <tr>
+                                                <th>Ghi nợ Tk</th>
+                                                <th style="width:200px">Diễn giải</th>
+                                                <th >Thành tiền</th>
+                                                <th >Thành tiền nt</th>
+                                                <th >Vụ việc</th>
+                                                <th >Mã phí</th>
+                                                <th >Mã thcp</th>                                               
+                                                <th >Mã công trình</th>                                               
+                                                <th >Mã tự do 01</th>                                                                     
+                                            </tr>
+                                        </thead>
+                                    </table>
+                                </HeaderTemplate>
+                                <ItemTemplate Context="itemContext">
+                                    <table>
+                                        <tbody>
+                                            <tr>
+                                                <td><span>@((itemContext as HoaDonMuaHangDto).GhiNoTKUd)</span></td>
+                                                <td style="width:200px"><span>@((itemContext as HoaDonMuaHangDto).DienGiai)</span></td>
+                                                <td ><span>@((itemContext as HoaDonMuaHangDto).Tien)</span></td>
+                                                <td ><span>@((itemContext as HoaDonMuaHangDto).TienVND)</span></td>
+                                                <td><span>@((itemContext as HoaDonMuaHangDto).VuViecUd)</span></td>
+                                                <td><span>@((itemContext as HoaDonMuaHangDto).MaPhiUd)</span></td>
+                                                <td><span>@((itemContext as HoaDonMuaHangDto).DmTapHopChiPhiUd)</span></td>
+                                                <td><span>@((itemContext as HoaDonMuaHangDto).CongTrinhUd)</span></td>
+                                                <td><span>@((itemContext as HoaDonMuaHangDto).MaTD01Ud)</span></td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </ItemTemplate>
+                            </DropDownListTemplates>
+                        </SfDropDownList>
+                    </Template>
+                </GridColumn>
+            </GridColumns>
+            <GridAggregates>
+                <GridAggregate>
+                    <GridAggregateColumns>
+                        <GridAggregateColumn Field="@nameof(PhieuNhapDto.NgayHt)" Type="AggregateType.Sum" Format="N0">
+                            <FooterTemplate>
+                                @{
+                                    var SumValue = (context as AggregateTemplateContext);
+                                    <div style="color:black">
+                                        Tổng tiền:
+                                    </div>
+                                }
+                            </FooterTemplate>
+                        </GridAggregateColumn>
+                        <GridAggregateColumn Field="@nameof(PhieuNhapDto.TongTienVND)" Type="AggregateType.Sum" Format="N0">
+                            <FooterTemplate>
+                                @{
+                                    var SumValue = (context as AggregateTemplateContext);
+                                    <div style="color:black">
+                                        @SumValue?.Sum
+                                    </div>
+                                }
+                            </FooterTemplate>
+                        </GridAggregateColumn>
+                        <GridAggregateColumn Field="@nameof(PhieuNhapDto.TongTien)" Type="AggregateType.Sum" Format="N2">
+                            <FooterTemplate>
+                                @{
+                                    var SumValue = (context as AggregateTemplateContext);
+                                    <div style="color:black">
+                                        @SumValue?.Sum
+                                    </div>
+                                }
+                            </FooterTemplate>
+                        </GridAggregateColumn>
+                    </GridAggregateColumns>
+                </GridAggregate>
+            </GridAggregates>
+        </SfGrid>
+    </div>
+    <ModalErrorMessage ShowModalMessage="@ShowModalMessage" CheckMessage="@CheckMessage" TextMessage="@TextMessage" IsDelete="@CheckDelete"
+                       OnCloseMessage="CloseModalMessage" OnConfirmDelele="ConfirmDeleleAsync" />
+}
+else
+{
+    <h3>Vui lòng chờ....</h3>
+}
+@code {
+    private DateTime? TuNgay { set; get; }
+    private DateTime? DenNgay { set; get; }
+    private string ContentNavbarMenu = "hóa đơn mua hàng";
+    private string HelpUrl = "https://tamkhoatech.vn/huong-dan-su-dung/hoa-don-mua-hang-dich-vu/";
+
+    private bool hasRefreshed = false;
+    private SfGrid<PhieuNhapDto> SfGridPN1 = new SfGrid<PhieuNhapDto>();
+    public List<PhieuNhapDto> PhieuNhapDtos = new List<PhieuNhapDto>();
+    public List<HoaDonMuaHangDto> HoaDonMuaHangDtos = new List<HoaDonMuaHangDto>();
+
+    private TongTienDto TongTien = new TongTienDto();
+
+    private bool ShowModalMessage = false;
+    private bool CheckMessage = false;
+    private string? TextMessage { set; get; }
+    private bool CheckDelete { set; get; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!hasRefreshed)
+        {
+            string uri = NavigationManager.BaseUri + await _localStorage.GetItemAsync<string>("urlPath");
+            if (NavigationManager.Uri != uri)
+            {
+                await _localStorage.SetItemAsync("urlPath", SystemConstants.UrlPath.HoaDonMuaHang);
+                NavigationManager.NavigateTo(SystemConstants.UrlPath.ThoiGianLamViec, true);
+            }
+            else
+            {
+                TuNgay = await _localStorage.GetItemAsync<string>("TuNgayLamViec") != null ? DateTime.Parse(await _localStorage.GetItemAsync<string>("TuNgayLamViec")) : null;
+                DenNgay = await _localStorage.GetItemAsync<string>("DenNgayLamViec") != null ? DateTime.Parse(await _localStorage.GetItemAsync<string>("DenNgayLamViec")).AddDays(1) : null;
+                if (TuNgay != null && DenNgay != null)
+                {
+                    PhieuNhapDtos = await _phieuNhap.GetListAsync( SystemConstants.LoaiPhieu.HoaDonMuaHang,TuNgay, DenNgay);
+                    hasRefreshed = true;
+                    await TongTienThongKeAsync();
+                }
+            }
+        }
+    }
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender)
+        {
+            await JSRunTime.InvokeVoidAsync("renameShowColumn", "Tìm kiếm...");
+            await JSRunTime.InvokeVoidAsync("getDotNetObjectReference", DotNetObjectReference.Create(this));
+        }
+    }
+    private async Task TongTienThongKeAsync()
+    {
+        TongTien = await _phieuNhap.TongTienPhatSinhAsync(PhieuNhapDtos);
+    }
+    private void AddAsync()
+    {
+        NavigationManager.NavigateTo($"/{SystemConstants.UrlPath.HoaDonMuaHang}/create", true);
+    }
+    private async Task EditAsync()
+    {
+        var selectedRecords = await SfGridPN1.GetSelectedRecordsAsync();
+        if (selectedRecords.Count == 0)
+        {
+            TextMessage = "Bạn chưa chọn dòng.";
+            CheckDelete = false;
+            ShowModalMessage = true;
+        }
+        else
+            NavigationManager.NavigateTo($"/{SystemConstants.UrlPath.HoaDonMuaHang}/edit/{selectedRecords.First().Id.ToString()}", true);
+        StateHasChanged();
+    }
+    private async Task DeleteAsync()
+    {
+        var selectedRecords = await SfGridPN1.GetSelectedRecordsAsync();
+        if(selectedRecords.Count > 0)
+        {
+            CheckDelete = true;
+            string names = "";
+            foreach (var data in selectedRecords)
+                names += data.Sopn + ", ";
+            names = names.TrimEnd(',', ' ');
+            TextMessage = $"Xác nhận xóa <b>{selectedRecords.Count.ToString("00")}</b> phiếu có số chứng từ {(selectedRecords.Count > 1 ? "gồm" : "")}: <span style='color:red'>{names}</span>";
+            ShowModalMessage = true;
+        }
+        else
+        {
+            CheckDelete = false;
+            TextMessage = "Bạn chưa chọn dòng.";
+            ShowModalMessage = true;
+        }
+        StateHasChanged();
+    }
+    private async Task ConfirmDeleleAsync()
+    {
+        CheckDelete = false;
+        ShowModalMessage = false;
+        var selectedRecords = await SfGridPN1.GetSelectedRecordsAsync();
+        if (selectedRecords.Count > 0)
+        {
+            var ids = new List<int?>();
+            foreach (var data in selectedRecords)
+                ids.Add(data.Id);
+            var result = await _phieuNhap.DeleteListAsync(ids);
+            if (result.IsSuccessed)
+            {
+                PhieuNhapDtos = await _phieuNhap.GetListAsync( SystemConstants.LoaiPhieu.HoaDonMuaHang,TuNgay, DenNgay);
+                await TongTienThongKeAsync();
+            }
+
+            else
+            {
+                TextMessage = result.Message;
+                ShowModalMessage = true;
+                CheckMessage = false;
+            }
+        }
+        StateHasChanged();
+    }
+    private void PrintAsync()
+    {
+        //test
+    }
+    private async Task TaoChiAsync()
+    {
+        var selectedRecords = await SfGridPN1.GetSelectedRecordsAsync();
+        if (selectedRecords.Count > 0)
+        {
+            foreach (var data in selectedRecords)
+            {
+                var phieuNhapDto = await _phieuNhap.GetByIdAsync(data.Id);
+                var phieuNhapRequest = _objectMapper.Map<PhieuNhapDto, PhieuNhapRequest>(phieuNhapDto);
+                phieuNhapRequest.HoaDonMuaHangRequests = _objectMapper.Map<List<HoaDonMuaHangDto>, List<HoaDonMuaHangRequest>>(phieuNhapDto.HoaDonMuaHangDtos ?? new List<HoaDonMuaHangDto>());
+                phieuNhapRequest.HoaDonRequests = _objectMapper.Map<List<HoaDonGtgtDto>, List<HoaDonRequest>>(phieuNhapDto.HoaDonGtgtDtos ?? new List<HoaDonGtgtDto>());
+                await _common.TaoPhieuChiAsync(data.Id, phieuNhapRequest);
+            }
+            TextMessage = "Tạo phiếu chi thành công!";
+            CheckMessage = true;
+            ShowModalMessage = true;
+
+        }
+        else
+        {
+            CheckDelete = false;
+            TextMessage = "Bạn chưa chọn dòng.";
+            ShowModalMessage = true;
+        }
+    }
+    private async Task ShowColumnAsync()
+    {
+        await this.SfGridPN1.OpenColumnChooserAsync();
+    }
+    private async Task RefreshAsync()
+    {
+
+        await this.SfGridPN1.SearchAsync(string.Empty);
+        PhieuNhapDtos = await _phieuNhap.GetListAsync(SystemConstants.LoaiPhieu.HoaDonMuaHang, TuNgay, DenNgay);
+        await TongTienThongKeAsync();
+        StateHasChanged();
+    }
+    //Call Back From Js function
+    [JSInvokable("searchInputNavbar")]
+    public async Task SearchAsync(string search)
+    {
+        await this.SfGridPN1.SearchAsync(search);
+    }
+    public async Task RecordClickHandler(RecordClickEventArgs<PhieuNhapDto> args)
+    {
+        var result = await _phieuNhap.GetByIdAsync(args.RowData.Id);
+        if (result.HoaDonMuaHangDtos != null)
+            HoaDonMuaHangDtos = result.HoaDonMuaHangDtos;
+        else
+            HoaDonMuaHangDtos = new List<HoaDonMuaHangDto>();
+        StateHasChanged();
+    }
+    public void RecordDoubleClickHandler(RecordDoubleClickEventArgs<PhieuNhapDto> args)
+    {
+        NavigationManager.NavigateTo($"/{SystemConstants.UrlPath.HoaDonMuaHang}/edit/{args.RowData.Id.ToString()}", true);
+    }
+    private void CloseModalMessage()
+    {
+        ShowModalMessage = false;
+    }
+}

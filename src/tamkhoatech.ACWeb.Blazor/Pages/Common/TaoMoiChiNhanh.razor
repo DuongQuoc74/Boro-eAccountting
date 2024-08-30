@@ -1,0 +1,124 @@
+﻿
+@using Blazored.LocalStorage
+@using Syncfusion.Blazor.Popups
+@using Syncfusion.Blazor.Inputs
+@using Syncfusion.Blazor.Buttons
+@using tamkhoatech.ACWeb.Dto
+@using tamkhoatech.ACWeb.IService
+
+
+@inject IJSRuntime JSRunTime
+@inject ILocalStorageService _localStorage
+@inject IChiNhanhService _chiNhanh
+
+<div>
+    <div class="container">
+        <EditForm Model="SelectChiNhanh" Context="editFormCN" OnValidSubmit="@Save">
+            <DataAnnotationsValidator />
+            <div class="mb-1">
+                <div class="row">
+                    <div class="col-sm-3">
+                        <label for="ChiNhanhUd" class="form-label">Mã chi nhánh <span class="text-danger">*</span></label>
+                    </div>
+                    <div class="col-sm-3">
+                        <SfTextBox ID="ChiNhanhUd" CssClass="e-small" @bind-Value="@(SelectChiNhanh.ChiNhanhUd)" @oninput="ConvertToUpperCase"></SfTextBox>
+                    </div>
+                </div>
+            </div>
+            <div class="mb-1">
+                <div class="row">
+                    <div class="col-sm-3">
+                        <label for="ChiNhanhNm" class="form-label">Tên chi nhánh <span class="text-danger">*</span></label>
+                    </div>
+                    <div class="col-sm-9">
+                        <SfTextBox ID="ChiNhanhNm" CssClass="e-small" @bind-Value="@(SelectChiNhanh.ChiNhanhNm)"></SfTextBox>
+                    </div>
+                </div>
+            </div>
+            <div class="mb-1">
+                <div class="row">
+                    <div class="col-sm-3">
+                        <label for="ChiNhanhNm2" class="form-label">Tên 2</label>
+                    </div>
+                    <div class="col-sm-9">
+                        <SfTextBox ID="ChiNhanhNm2" CssClass="e-small" @bind-Value="@(SelectChiNhanh.ChiNhanhNm2)"></SfTextBox>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row-line"></div>
+            <div class="modal-footer">
+                <button type="submit" class="btn btn-sm btn-primary">Nhận</button>
+                <button type="button" class="btn btn-sm btn-danger" @onclick="CloseModalCreate">Hủy</button>
+                <button type="button" class="btn btn-sm btn-secondary" @onclick="Reset">Làm mới</button>
+            </div>
+        </EditForm>
+    </div>
+</div>
+
+<!--Modal Message Error-->
+<ModalErrorMessage ShowModalMessage="@ShowModalMessage" CheckMessage="@CheckMessage" TextMessage="@TextMessage" OnCloseMessage="@CloseModalMessage" />
+
+
+
+@code {
+    private bool ShowModalMessage = false;
+    private bool CheckMessage = false;
+    private string TextMessage = string.Empty;
+    [Parameter]
+    public EventCallback OnValidSubmitModalCreate { get; set; }
+    public ChiNhanhRequest SelectChiNhanh = new ChiNhanhRequest();
+
+
+    private void ConvertToUpperCase(Microsoft.AspNetCore.Components.ChangeEventArgs args)
+    {
+        if (args.Value != null)
+        {
+            var text = args.Value.ToString();
+            if (text != null)
+                SelectChiNhanh.ChiNhanhUd = text.ToUpper();
+        }
+    }
+    private async void Save()
+    {
+        try
+        {
+            var result = await _chiNhanh.CreateAsync(SelectChiNhanh);
+            if (result.IsSuccessed)
+            {
+                await _localStorage.SetItemAsync("TaoMoiChiNhanhUd", SelectChiNhanh.ChiNhanhUd);
+                CheckMessage = true;
+                ShowModalMessage = true;
+                TextMessage = result.Message;
+            }
+            else
+            {
+                CheckMessage = false;
+                TextMessage = result.Message;
+                ShowModalMessage = true;
+            }
+
+        }
+        catch (Exception)
+        {
+            CheckMessage = false;
+            TextMessage = "Lỗi hệ thống! Vui lòng liên hệ bộ phận kỹ thuật để được hỗ trợ.";
+            ShowModalMessage = true;
+        }
+        StateHasChanged();
+    }
+    private void Reset()
+    {
+        SelectChiNhanh = new ChiNhanhRequest();
+
+        StateHasChanged();
+    }
+    public void CloseModalMessage()
+    {
+        ShowModalMessage = false;
+    }   
+    public async Task CloseModalCreate()
+    {
+        await OnValidSubmitModalCreate.InvokeAsync();
+    }
+}

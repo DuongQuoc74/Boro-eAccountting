@@ -1,0 +1,35 @@
+﻿@page "/menu"
+@using Blazored.LocalStorage
+@using tamkhoatech.ACWeb.Constants
+@inject NavigationManager NavigationManager
+@inject ILocalStorageService _localStorage
+
+
+
+<a href="/" @onclick="LinkPhieuThu">Phiếu thu</a>
+<a href="/" @onclick="LinkPhieuChi">Phiếu chi</a>
+<a href="/" @onclick="LinkGiayBaoCo">Giấy báo có</a>
+<a href="/" @onclick="LinkGiayBaoNo">Giấy báo Nợ</a>
+
+@code{
+    public async void LinkPhieuThu()
+    {
+        await _localStorage.SetItemAsync("urlPath", SystemConstants.UrlPath.PhieuThu);
+        NavigationManager.NavigateTo("/thoigianlamviec", true);
+    }
+    public async void LinkPhieuChi()
+    {
+        await _localStorage.SetItemAsync("urlPath", SystemConstants.UrlPath.PhieuChi);
+        NavigationManager.NavigateTo("/thoigianlamviec", true);
+    }
+    public async void LinkGiayBaoCo()
+    {
+        await _localStorage.SetItemAsync("urlPath", SystemConstants.UrlPath.GiayBaoCo);
+        NavigationManager.NavigateTo("/thoigianlamviec", true);
+    }
+    public async void LinkGiayBaoNo()
+    {
+        await _localStorage.SetItemAsync("urlPath", SystemConstants.UrlPath.GiayBaoNo);
+        NavigationManager.NavigateTo("/thoigianlamviec", true);
+    }
+}

@@ -1,0 +1,813 @@
+﻿@page "/tudongtaithongtinsophunganhang"
+@using System.IO
+@using Blazored.LocalStorage
+@using tamkhoatech.ACWeb.Blazor.Pages.Common
+@using tamkhoatech.ACWeb.Constants
+@using tamkhoatech.ACWeb.Dto
+@using tamkhoatech.ACWeb.IService
+
+@inject ILayThongTinSoPhuNganHangService _layThongTinSoPhuNganHangService
+@inject IPhieuThuService _phieuThu
+@inject IPhieuChiService _phieuChi
+@inject ITaiKhoanService _taiKhoan
+@inject IChiNhanhService _chiNhanh
+@inject IDMChungService _dmChung
+@inject IQuyenSoService _quyenSo
+@inject INgoaiTeService _ngoaiTe
+@inject IKhachHangService _khachHang
+@inject IJSRuntime _jsRuntime
+@inject ILocalStorageService _localStorage
+
+<link rel="stylesheet" href="/Css/them-sua-phieu.css">
+@if (hasRefreshed)
+{
+    <div @onkeyup="@OnKeyUp">
+        <div class="row title">
+            <div class="text-center">
+                <div class="row align-items-start">
+                    <h4><strong>Tự động tải thông tin sổ phụ ngân hàng</strong></h4>
+                </div>
+            </div>
+        </div>
+        <div>
+            <div class="row">
+                <div class="col-sm-3">
+                    <div style="margin-top: 32px" class="bordered-div">
+                        <div class="border-text">Import excel</div>
+                        <div class="row">
+                            <div class="col-sm-12">
+                                <SfUploader AutoUpload="true" AllowMultiple="false" AllowedExtensions=".xls, .xlsx" DropArea="#customDropArea">
+                                    <UploaderEvents ValueChange="@OnChangeAsync" OnRemove="OnRemove"></UploaderEvents>
+                                    <UploaderButtons Browse="Chọn files"></UploaderButtons>
+                                </SfUploader>
+                                <div id="customDropArea" style="border-left: 1px dashed #0d6efd63; border-right: 1px dashed #0d6efd63;border-bottom: 1px dashed #0d6efd63; padding: 20px; text-align: center;">
+                                    Kéo và thả files vào đây
+                                </div>
+                                <div style="margin-top: 8px;" class="modal-footer">
+                                    <button type="button" class="btn btn-sm btn-secondary" @onclick="ExportTemplapteAsync">Mẫu excel</button>
+                                    <button type="button" class="btn btn-sm btn-primary" @onclick="ImportAysnc">Nhận</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bordered-div">
+                        <div class="row">
+                            <div class="col-sm-12">
+                                <p><b>Shift + t</b>: Sao chép và dán dữ liệu lên trên danh sách</p>
+                                <p><b>Shift + b</b>: Sao chép và dán dữ liệu xuống dưới danh sách</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-sm-9">
+                    <div style="margin-top: 32px" class="bordered-div">
+                        <div class="border-text">Chi tiết phát sinh</div>
+                        <div class="row">
+                            <SfGrid @ref="SfGridSoPhuNganHang" ID="gird-SoPhuNganHang" DataSource="@SoPhuNganHangDto.DataSoPhus" AllowSelection="true" AllowSorting="true" AllowResizing="true" Height="400">
+                                <GridEvents TValue="DataSoPhu" CellSelected="OnCellSelected"></GridEvents>
+                                <GridEditSettings AllowAdding="false" AllowEditing="true" AllowDeleting="false" NewRowPosition="NewRowPosition.Bottom"></GridEditSettings>
+                                <GridSelectionSettings Mode="Syncfusion.Blazor.Grids.SelectionMode.Cell" CellSelectionMode="CellSelectionMode.Box" AllowDragSelection="true" Type="Syncfusion.Blazor.Grids.SelectionType.Multiple"></GridSelectionSettings>
+                                <GridColumns>
+                                    <GridColumn Field=@nameof(DataSoPhu.Id) HeaderText="#" IsPrimaryKey="true" AllowAdding="false" AllowEditing="false" TextAlign="TextAlign.Center" Width="40"></GridColumn>
+                                    <GridColumn Field=@nameof(DataSoPhu.Loai) HeaderText="Loại" AllowAdding="false" AllowEditing="false" TextAlign="TextAlign.Left" Width="150"></GridColumn>
+                                    <GridColumn Field=@nameof(DataSoPhu.Ngay) HeaderText="Ngày hạch toán" AllowAdding="false" AllowEditing="false" Format="dd/MM/yyyy" TextAlign="TextAlign.Left" Width="150"></GridColumn>
+                                    <GridColumn Field=@nameof(DataSoPhu.PsNoVND) HeaderText="Phát sinh nợ" AllowAdding="false" AllowEditing="false" Format="N0" TextAlign="TextAlign.Right" Width="150"></GridColumn>
+                                    <GridColumn Field=@nameof(DataSoPhu.PsCoVND) HeaderText="Phát sinh có" AllowAdding="false" AllowEditing="false" Format="N0" TextAlign="TextAlign.Right" Width="150"></GridColumn>
+                                    <GridColumn Field=@nameof(DataSoPhu.DienGiai) HeaderText="Diễn giải" AllowAdding="false" AllowEditing="false" TextAlign="TextAlign.Left" Width="300"></GridColumn>
+                                    <GridColumn Field=@nameof(DataSoPhu.KhachHangId)  TextAlign="TextAlign.Left" Width="150">
+                                        <HeaderTemplate>
+                                            Mã khách <span style="color:red">*</span>
+                                        </HeaderTemplate>
+                                        <EditTemplate>
+                                            @{
+                                                var item = (context as DataSoPhu);
+                                                if (item != null)
+                                                {
+                                                    <SfComboBox @bind-Value="@(item.KhachHangId)" DataSource="@KhachHangDtos" Autofill="true" AllowCustom="false" CssClass="e-multi-column" PopupWidth="1000" PopupHeight="300">
+                                                        <ComboBoxEvents TValue="int?" TItem="KhachHangDto" ValueChange="OnValueChangeKhachHangCT"></ComboBoxEvents>
+                                                        <ComboBoxFieldSettings Text="KhachHangUd" Value="Id"></ComboBoxFieldSettings>
+                                                        <ComboBoxTemplates TItem="KhachHangDto">
+                                                            <HeaderTemplate>
+                                                                <table class="header-combo">
+                                                                    <tr>
+                                                                        <th style="width:150px">Mã khách hàng</th>
+                                                                        <th>Tên khách</th>
+                                                                        <th style="width:150px">Mã số thuế</th>
+                                                                        <th style="width:150px">Số dư</th>
+                                                                        <th>Địa chỉ</th>
+                                                                    </tr>
+                                                                </table>
+                                                            </HeaderTemplate>
+                                                            <ItemTemplate Context="itemContext">
+                                                                <table>
+                                                                    <tbody>
+                                                                        <tr>
+                                                                            <td style="width:130px"><span>@((itemContext as KhachHangDto).KhachHangUd)</span></td>
+                                                                            <td><span>@((itemContext as KhachHangDto).KhachHangNm)</span></td>
+                                                                            <td style="width:130px"><span>@((itemContext as KhachHangDto).MaSoThue)</span></td>
+                                                                            <td style="width:130px"><span>@((itemContext as KhachHangDto).Sodu?.ToString("N0"))</span></td>
+                                                                            <td><span>@((itemContext as KhachHangDto).DiaChi)</span></td>
+                                                                        </tr>
+                                                                    </tbody>
+                                                                </table>
+                                                            </ItemTemplate>
+                                                        </ComboBoxTemplates>
+                                                    </SfComboBox>
+                                                    if (CheckOnChangeValueKhachHangCT)
+                                                    {
+                                                        item.KhachHangUd = SelectKhachHangCT.KhachHangUd;
+                                                        item.KhachHangNm = SelectKhachHangCT.KhachHangNm;
+                                                        item.MaSoThue = SelectKhachHangCT.MaSoThue;
+                                                        CheckOnChangeValueKhachHangCT = false;
+                                                    }
+                                                }
+                                            }
+                                        </EditTemplate>
+                                        <Template>
+                                            @{
+                                                var item = (context as DataSoPhu);
+                                                <div>@item?.KhachHangUd</div>
+                                            }
+                                        </Template>
+                                    </GridColumn>
+                                    <GridColumn Field=@nameof(DataSoPhu.TkDu)  TextAlign="TextAlign.Left" Width="180">
+                                        <HeaderTemplate>
+                                            Tài khoản đối ứng <span style="color:red">*</span>
+                                        </HeaderTemplate>
+                                        <EditTemplate>
+                                            @{
+                                                var item = (context as DataSoPhu);
+                                                if (item != null)
+                                                {
+                                                    <SfComboBox @bind-Value="@(item.TkDu)" DataSource="@TaiKhoanDtos" Autofill="true" AllowCustom="false" CssClass="e-multi-column" PopupWidth="700" PopupHeight="300">
+                                                        <ComboBoxEvents TValue="int?" TItem="TaiKhoanDto" ValueChange="OnValueChangeTaiKhoanCT"></ComboBoxEvents>
+                                                        <ComboBoxFieldSettings Text="TaiKhoanUd" Value="Id"></ComboBoxFieldSettings>
+                                                        <ComboBoxTemplates TItem="TaiKhoanDto">
+                                                            <HeaderTemplate>
+                                                                <table class="header-combo">
+                                                                    <tr>
+                                                                        <th style="width:150px">Mã tài khoản</th>
+                                                                        <th>Tên tài khoản</th>
+                                                                        <th>Tên 2</th>
+                                                                    </tr>
+                                                                </table>
+                                                            </HeaderTemplate>
+                                                            <ItemTemplate Context="itemContext">
+                                                                <table>
+                                                                    <tbody>
+                                                                        <tr>
+                                                                            <td style="width:150px"><span>@((itemContext as TaiKhoanDto).TaiKhoanUd)</span></td>
+                                                                            <td><span>@((itemContext as TaiKhoanDto).TaiKhoanNm)</span></td>
+                                                                            <td><span>@((itemContext as TaiKhoanDto).TaiKhoanNm2)</span></td>
+                                                                        </tr>
+                                                                    </tbody>
+                                                                </table>
+                                                            </ItemTemplate>
+                                                        </ComboBoxTemplates>
+                                                    </SfComboBox>
+                                                    if (CheckOnChangeValueTaiKoanCT)
+                                                    {
+                                                        item.TkDuUd = SelectTaiKhoanCT.TaiKhoanUd;
+                                                        CheckOnChangeValueTaiKoanCT = false;
+                                                    }
+                                                }
+                                            }
+                                        </EditTemplate>
+                                        <Template>
+                                            @{
+                                                var item = (context as DataSoPhu);
+                                                <div>@item?.TkDuUd</div>
+                                            }
+                                        </Template>
+                                    </GridColumn>
+                                    <GridColumn Field=@nameof(DataSoPhu.KhachHangNm) HeaderText="Tên khách" TextAlign="TextAlign.Left" Width="300">
+                                        <EditTemplate>
+                                            @{
+                                                var item = (context as DataSoPhu);
+                                                if (item != null)
+                                                {
+                                                    <SfTextBox @bind-Value="@(item.KhachHangNm)" Enabled="false"></SfTextBox>
+                                                }
+                                            }
+                                        </EditTemplate>
+                                    </GridColumn>
+                                </GridColumns>
+                                <GridAggregates>
+                                    <GridAggregate>
+                                        <GridAggregateColumns>
+                                            <GridAggregateColumn Field="@nameof(DataSoPhu.Loai)" Type="AggregateType.Sum" Format="N0">
+                                                <FooterTemplate>
+                                                    @{
+                                                        var SumValue = (context as AggregateTemplateContext);
+                                                        <div style="color:black">
+                                                            Tổng tiền:
+                                                        </div>
+                                                    }
+                                                </FooterTemplate>
+                                            </GridAggregateColumn>
+                                            <GridAggregateColumn Field="@nameof(DataSoPhu.PsCoVND)" Type="AggregateType.Sum" Format="N0">
+                                                <FooterTemplate>
+                                                    @{
+                                                        var SumValue = (context as AggregateTemplateContext);
+                                                        <div style="color:black">
+                                                            @SumValue?.Sum
+                                                        </div>
+                                                    }
+                                                </FooterTemplate>
+                                            </GridAggregateColumn>
+                                            <GridAggregateColumn Field="@nameof(DataSoPhu.PsNoVND)" Type="AggregateType.Sum" Format="N0">
+                                                <FooterTemplate>
+                                                    @{
+                                                        var SumValue = (context as AggregateTemplateContext);
+                                                        <div style="color:black">
+                                                            @SumValue?.Sum
+                                                        </div>
+                                                    }
+                                                </FooterTemplate>
+                                            </GridAggregateColumn>
+                                        </GridAggregateColumns>
+                                    </GridAggregate>
+                                </GridAggregates>
+                            </SfGrid>
+                        </div>
+                        <br />
+                        <div class="row">
+                            <div class="col-sm-2">
+                                <label for="TaiKhoanId" class="form-label">Tài khoản ngân hàng <span class="text-danger">*</span></label>
+                            </div>
+                            <div class="col-sm-2">
+                                <SfComboBox @bind-Value="@TaiKhoanId" DataSource="@TaiKhoanDtos" Autofill="true" AllowCustom="false" CssClass="e-multi-column e-small" PopupWidth="800" PopupHeight="300">
+                                    <ComboBoxEvents TValue="int?" TItem="TaiKhoanDto" ValueChange="OnValueChangeTaiKhoan"></ComboBoxEvents>
+                                    <ComboBoxFieldSettings Text="TaiKhoanUd" Value="Id"></ComboBoxFieldSettings>
+                                    <ComboBoxTemplates TItem="TaiKhoanDto">
+                                        <HeaderTemplate>
+                                            <table class="header-combo">
+                                                <tr>
+                                                    <th style="width:150px">Mã tài khoản</th>
+                                                    <th>Tên tài khoản</th>
+                                                    <th>Tên 2</th>
+                                                </tr>
+                                            </table>
+                                        </HeaderTemplate>
+                                        <ItemTemplate Context="itemContext">
+                                            <table>
+                                                <tbody>
+                                                    <tr>
+                                                        <td style="width:150px"><span>@((itemContext as TaiKhoanDto).TaiKhoanUd)</span></td>
+                                                        <td><span>@((itemContext as TaiKhoanDto).TaiKhoanNm)</span></td>
+                                                        <td><span>@((itemContext as TaiKhoanDto).TaiKhoanNm2)</span></td>
+                                                    </tr>
+                                                </tbody>
+                                            </table>
+                                        </ItemTemplate>
+                                    </ComboBoxTemplates>
+                                </SfComboBox>
+                            </div>
+                            <div class="col-sm-4">
+                                <SfTextBox ID="TaiKhoanNm" CssClass="e-small" @bind-Value="@TaiKhoanNm" Enabled="false"></SfTextBox>
+                            </div>
+                        </div>
+                        
+                            <div style="margin-top: 8px;" class="modal-footer">
+                                <button type="button" class="btn btn-sm btn-secondary" @onclick="ExportExcelAsync">Xuất excel</button>
+                            @if (IsCheckData)
+                            {
+                                <button type="button" class="btn btn-sm btn-primary" @onclick="SaveAsync">Tạo</button>
+                            }
+                            </div>
+                       
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+        <ModalErrorMessage ShowModalMessage="@ShowModalMessage" CheckMessage="@CheckMessage" TextMessage="@TextMessage"
+                       OnCloseMessage="CloseModalMessage" />
+}
+else
+{
+    <h3>Vui lòng chờ....</h3>
+}
+
+@code {
+    private bool hasRefreshed = false;
+    private bool IsCheckData = false;
+    private SoPhuNganHangDto SoPhuNganHangDto = new SoPhuNganHangDto();
+    private SfGrid<DataSoPhu> SfGridSoPhuNganHang = new SfGrid<DataSoPhu>();
+    public int? TaiKhoanId { get; set; }
+    public string? TaiKhoanUd { get; set; }
+    public string? TaiKhoanNm { get; set; }
+    private List<TaiKhoanDto> TaiKhoanDtos = new List<TaiKhoanDto>();
+    private List<ChiNhanhDto> ChiNhanhDtos = new List<ChiNhanhDto>();
+    private List<DmChungDto> MaGiaoDichDtos = new List<DmChungDto>();
+    private List<NgoaiTeDto> NgoaiTeDtos = new List<NgoaiTeDto>();
+    private List<DmChungDto> DMChungDtos = new List<DmChungDto>();
+
+    private TaiKhoanDto SelectTaiKhoanCT = new TaiKhoanDto();
+    private bool CheckOnChangeValueTaiKoanCT = false;
+
+    private List<KhachHangDto> KhachHangDtos = new List<KhachHangDto>();
+    private KhachHangDto SelectKhachHangCT = new KhachHangDto();
+    private bool CheckOnChangeValueKhachHangCT = false;
+    private bool ShowModalMessage = false;
+    private bool CheckMessage = false;
+    private string? TextMessage { set; get; }
+    protected override async Task OnInitializedAsync()
+    {
+        if (!hasRefreshed)
+        {
+            ChiNhanhDtos = await _chiNhanh.GetListAsync();
+            TaiKhoanDtos = await _taiKhoan.GetListAsync();
+            MaGiaoDichDtos = await _dmChung.GetListAsync(SystemConstants.DmChung.GiaoDichCo);
+            NgoaiTeDtos = await _ngoaiTe.GetListAsync();
+            if (TaiKhoanDtos != null)
+                this.DefaultValueGhiCoTaiKhoan(TaiKhoanDtos);
+            KhachHangDtos = await _khachHang.GetListAsync(SystemConstants.KhachHang.Loai1);
+            DMChungDtos = await _dmChung.GetListAsync(SystemConstants.DmChung.LoaiThue);
+            hasRefreshed = true;
+        }
+    }
+    private async Task OnCellSelected(CellSelectEventArgs<DataSoPhu> args)
+    {
+        var text = args.Data;
+        var listDouble = await this.SfGridSoPhuNganHang.GetSelectedRowCellIndexesAsync();
+        if (listDouble.Count == 1)
+        {
+            foreach (var cell in listDouble)
+            {
+                switch (cell.Item2)
+                {
+                    case 6:
+                        await _localStorage.SetItemAsync("cellValue", text.KhachHangId);
+                        break;
+                    case 7:
+                        await _localStorage.SetItemAsync("cellValue", text.TkDu);
+                        break;
+                }
+
+            }
+        }
+
+    }
+    private async Task OnKeyUp(KeyboardEventArgs args)
+    {
+        var listDouble = await SfGridSoPhuNganHang.GetSelectedRowCellIndexesAsync();
+        var cellValue = await _localStorage.GetItemAsync<string>("cellValue");
+        var cellIndex = listDouble.FirstOrDefault();
+        var request = SoPhuNganHangDto;
+        int id = (cellValue == null || cellValue == "") ? 0 : int.Parse(cellValue);
+        KhachHangDtos = await _khachHang.GetListAsync(SystemConstants.KhachHang.Loai1);
+        var kh = KhachHangDtos.FirstOrDefault(x => x.Id == id);
+        TaiKhoanDtos = await _taiKhoan.GetListAsync();
+        var tk = TaiKhoanDtos.FirstOrDefault(x => x.Id == id);
+        if (args.ShiftKey && args.Key == "B")
+        {
+            for (var i = cellIndex.Item1; i < request.DataSoPhus?.Count; i++)
+            {
+                switch (cellIndex.Item2)
+                {
+                    case 6:
+                        if (kh != null)
+                        {
+                            request.DataSoPhus[i].KhachHangId = kh.Id;
+                            request.DataSoPhus[i].KhachHangUd = kh?.KhachHangUd;
+                            request.DataSoPhus[i].KhachHangNm = kh?.KhachHangNm;
+                        }
+                        else
+                        {
+                            request.DataSoPhus[i].KhachHangId = null;
+                            request.DataSoPhus[i].KhachHangUd = null;
+                            request.DataSoPhus[i].KhachHangNm = null;
+                        }
+                        break;
+                    case 7:
+                        if(tk != null)
+                        {
+                            request.DataSoPhus[i].TkDu = tk.Id;
+                            request.DataSoPhus[i].TkDuUd = tk?.TaiKhoanUd;
+                        }
+                        else
+                        {
+                            request.DataSoPhus[i].TkDu = null;
+                            request.DataSoPhus[i].TkDuUd = null;
+                        }
+                        break;
+                }
+            }
+            await SfGridSoPhuNganHang.Refresh();
+        }
+        else if (args.ShiftKey && args.Key == "T")
+        {
+            if (request.DataSoPhus != null)
+            {
+                for (var i = 0; i <= cellIndex.Item1; i++)
+                {
+                    switch (cellIndex.Item2)
+                    {
+                        case 6:
+                            if (kh != null)
+                            {
+                                request.DataSoPhus[i].KhachHangId = kh.Id;
+                                request.DataSoPhus[i].KhachHangUd = kh?.KhachHangUd;
+                                request.DataSoPhus[i].KhachHangNm = kh?.KhachHangNm;
+                            }
+                            break;
+                        case 7:
+                            if (tk != null)
+                            {
+                                request.DataSoPhus[i].TkDu = tk.Id;
+                                request.DataSoPhus[i].TkDuUd = tk?.TaiKhoanUd;
+                            }
+                            break;
+                    }
+                }
+            }
+            await SfGridSoPhuNganHang.Refresh();
+        }
+    }
+    private void OnValueChangeTaiKhoan(ChangeEventArgs<int?, TaiKhoanDto> args)
+    {
+        if (args.ItemData != null)
+        {
+            TaiKhoanNm = args.ItemData.TaiKhoanNm;
+            TaiKhoanUd = args.ItemData.TaiKhoanUd;
+        }
+    }
+    private async Task OnChangeAsync(UploadChangeEventArgs args)
+    {
+        try
+        {
+            //tạo 1 đường dẫn chứa tên thư mục tạm để chứa file 
+            var filePath = Path.Combine(AppContext.BaseDirectory, "TemporarySoPhuNganHang");
+            Directory.CreateDirectory(filePath); // Tạo thư mục TemporaryFileUpload nếu nó chưa tồn tại
+
+            // Xóa những file đã tồn tại trong thư mục (nếu có)
+            var existingFiles = Directory.GetFiles(filePath);
+            foreach (var existingFile in existingFiles)
+            {
+                File.Delete(existingFile);
+            }
+
+            //Lưu file vào thư mục để chờ xử lý
+            foreach (var file in args.Files)
+            {
+                var path = Path.Combine(filePath, file.FileInfo.Name);
+                using (var filestream = new FileStream(path, FileMode.Create, FileAccess.Write))
+                {
+                    await file.File.OpenReadStream(long.MaxValue).CopyToAsync(filestream);
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.Message);
+        }
+    }
+
+    private void OnRemove()
+    {
+        var filePath = Path.Combine(AppContext.BaseDirectory, "TemporarySoPhuNganHang");
+        // Xóa file đã tồn tại (nếu có)
+        var existingFiles = Directory.GetFiles(filePath);
+        foreach (var existingFile in existingFiles)
+        {
+            File.Delete(existingFile);
+        }
+    }
+    private async Task ExportTemplapteAsync()
+    {
+        var content = _layThongTinSoPhuNganHangService.ExportSampleExcel();
+        var fileName = "Sample.xlsx";
+        var contentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+        var base64 = Convert.ToBase64String(content);
+        await _jsRuntime.InvokeVoidAsync("downloadFileFromBase64", fileName, contentType, base64);
+    }   
+    private async Task ExportExcelAsync()
+    {
+        var request = SoPhuNganHangDto;
+        request.TaiKhoanNganHang = TaiKhoanUd;
+        var content = _layThongTinSoPhuNganHangService.ExportExcel(request);
+        var fileName = "SoPhuNganHang.xlsx";
+        var contentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+        var base64 = Convert.ToBase64String(content);
+        await _jsRuntime.InvokeVoidAsync("downloadFileFromBase64", fileName, contentType, base64);
+    }
+    private async Task ImportAysnc()
+    {
+        SoPhuNganHangDto = await _layThongTinSoPhuNganHangService.ImportAysnc();
+        if (SoPhuNganHangDto.TenNganHang == null)
+        {
+            IsCheckData = false;
+            ShowModalMessage = true;
+            CheckMessage = false;
+            TextMessage = "Không đọc được file. Vui lòng kiểm tra lại !";
+        }
+        else
+            IsCheckData = true;
+        StateHasChanged();
+    }
+    private void OnValueChangeKhachHangCT(ChangeEventArgs<int?, KhachHangDto> args)
+    {
+        this.SfGridSoPhuNganHang.PreventRender(false);
+        CheckOnChangeValueKhachHangCT = true;
+        if (args.ItemData != null)
+        {
+            SelectKhachHangCT = args.ItemData;
+        }
+        StateHasChanged();
+    }
+    private void OnValueChangeTaiKhoanCT(ChangeEventArgs<int?, TaiKhoanDto> args)
+    {
+        CheckOnChangeValueTaiKoanCT = true;
+        this.SfGridSoPhuNganHang.PreventRender(false);
+        if (args.ItemData != null)
+        {
+            SelectTaiKhoanCT = args.ItemData;
+        }
+        StateHasChanged();
+    }
+    private async Task SaveAsync()
+    {
+        if (SoPhuNganHangDto?.DataSoPhus?.Count > 0)
+        {
+            try
+            {
+                bool checkDataValid = true;
+                bool checkSuccsess = true;
+                foreach (var item in SoPhuNganHangDto.DataSoPhus)
+                {
+                    if (item.KhachHangId == null || item.TkDu == null || !TaiKhoanId.HasValue)
+                    {
+                        checkDataValid = false;
+                        break;
+                    }
+                }
+                if (checkDataValid)
+                {
+                    await DeleteSoPhuOldAsync();
+                    foreach (var item in SoPhuNganHangDto.DataSoPhus)
+                    {
+                        var ngoaiTe = NgoaiTeDtos.FirstOrDefault(x => x.NgoaiTeUd == "VND");
+                        var tyGiaNgoaiTe = await _ngoaiTe.GetByIdAsync(ngoaiTe?.Id);
+                        if (item.Loai == SystemConstants.LoaiPhieu.GiayBaoCo)
+                        {
+                            var quyenSoBC = await _quyenSo.GetListAsync(SystemConstants.LoaiPhieu.GiayBaoCo);
+                            var quyenSo = quyenSoBC.FirstOrDefault(x => x.IsUser == true);
+                            string sokiTu0 = (quyenSo != null && quyenSo.SoKyTu0.HasValue) ? "D" + quyenSo.SoKyTu0.ToString() : "D0";
+                            PhieuThuRequest phieuThu = new PhieuThuRequest()
+                                {
+                                    LoaiPhieu = SystemConstants.LoaiPhieu.GiayBaoCo,
+                                    ChiNhanhId = (ChiNhanhDtos?.FirstOrDefault(x => x.ChiNhanhUd == "TCT")?.Id) ?? null,
+                                    GiaoDichId = (MaGiaoDichDtos?.FirstOrDefault(x => x.DMChungUd == "2")?.Id) ?? null,
+                                    KhachHangId = item.KhachHangId,
+                                    GhiNoTkId = TaiKhoanId,
+                                    NgayHT = item.Ngay,
+                                    NgayLap = item.Ngay,
+                                    SoPhieu = (quyenSo != null && quyenSo.SoCtHienTai.HasValue) ? (quyenSo.SoCtHienTai.Value + 1).ToString(sokiTu0) : "0",
+                                    QuyenSoId = (quyenSo != null && quyenSo.SoQuyen != null) ? quyenSo.SoQuyen : SystemConstants.NA,
+                                    NgoaiTeId = ngoaiTe?.Id,
+                                    TyGia = tyGiaNgoaiTe.TyGiaNgoaiTeDtos?.First().TyGia,
+                                    TongTienVND = item.PsCoVND,
+                                    DiaChi = item.DiaChi,
+                                    MaSoThue = item.MaSoThue,
+                                    IsPostSC = true,
+                                    IsSuaTien = false,
+                                    IsTaoTuDong = true,
+                                    BankAccountNumber = SoPhuNganHangDto.TenNganHang + ":" + SoPhuNganHangDto.SoTaiKhoan
+                                };
+                            var phieuThuCts = new List<PhieuThuCTRequest>();
+                            var phieuThuCt = new PhieuThuCTRequest()
+                                {
+                                    GhiCoTk = item.TkDu,
+                                    PsCoVND = item.PsCoVND,
+                                    ThanhToanVND = item.PsCoVND,
+                                    ThanhToanQd = item.PsCoVND,
+                                    TyGiaGS = tyGiaNgoaiTe.TyGiaNgoaiTeDtos?.First().TyGia,
+                                    DienGiai = item.DienGiai,
+                                    TienHt = item.PsCoVND
+                                };
+                            phieuThuCts.Add(phieuThuCt);
+                            List<SoCaiRequest> soCaiRequests = new List<SoCaiRequest>();
+                            var soCai1 = new SoCaiRequest()
+                                {
+                                    MaNk = SystemConstants.LoaiPhieu.GiayBaoCo,
+                                    MaGd = (MaGiaoDichDtos?.FirstOrDefault(x => x.DMChungUd == "2")?.Id) ?? null,
+                                    NgayHt = item.Ngay,
+                                    NgayLap = item.Ngay,
+                                    SoCt = (quyenSo != null && quyenSo.SoCtHienTai.HasValue) ? (quyenSo.SoCtHienTai.Value + 1).ToString(sokiTu0) : "0",
+                                    KhachHangId = item.KhachHangId,
+                                    DienGiai = item.DienGiai,
+                                    NhomDinhKhoan = SystemConstants.NhomDinhKhoan.DoanhThu,
+                                    Tk = TaiKhoanId,
+                                    TkDoiUng = item.TkDu,
+                                    PhatSinhNo = 0,
+                                    PhatSinhCo = 0,
+                                    NgoaiTeId = ngoaiTe?.Id,
+                                    TyGia = tyGiaNgoaiTe.TyGiaNgoaiTeDtos?.First().TyGia,
+                                    TyGiaHt = tyGiaNgoaiTe.TyGiaNgoaiTeDtos?.First().TyGia,
+                                    TyGiaHt2 = tyGiaNgoaiTe.TyGiaNgoaiTeDtos?.First().TyGia,
+                                    PhatSinhNoVND = item.PsCoVND,
+                                    PhatSinhCoVND = 0,
+                                    ChiNhanhId = (ChiNhanhDtos?.FirstOrDefault(x => x.ChiNhanhUd == "TCT")?.Id) ?? null,
+                                    SoQuyen = (quyenSo != null && quyenSo.SoQuyen != null) ? quyenSo.SoQuyen : SystemConstants.NA,
+                                };
+                            soCaiRequests.Add(soCai1);
+                            var soCai2 = new SoCaiRequest()
+                                {
+                                    MaNk = SystemConstants.LoaiPhieu.GiayBaoCo,
+                                    MaGd = (MaGiaoDichDtos?.FirstOrDefault(x => x.DMChungUd == "2")?.Id) ?? null,
+                                    NgayHt = item.Ngay,
+                                    NgayLap = item.Ngay,
+                                    SoCt = (quyenSo != null && quyenSo.SoCtHienTai.HasValue) ? (quyenSo.SoCtHienTai.Value + 1).ToString(sokiTu0) : "0",
+                                    KhachHangId = item.KhachHangId,
+                                    DienGiai = item.DienGiai,
+                                    NhomDinhKhoan = SystemConstants.NhomDinhKhoan.DoanhThu,
+                                    Tk = item.TkDu,
+                                    TkDoiUng = TaiKhoanId,
+                                    PhatSinhNo = 0,
+                                    PhatSinhCo = 0,
+                                    NgoaiTeId = ngoaiTe?.Id,
+                                    TyGia = tyGiaNgoaiTe.TyGiaNgoaiTeDtos?.First().TyGia,
+                                    TyGiaHt = tyGiaNgoaiTe.TyGiaNgoaiTeDtos?.First().TyGia,
+                                    TyGiaHt2 = tyGiaNgoaiTe.TyGiaNgoaiTeDtos?.First().TyGia,
+                                    PhatSinhNoVND = 0,
+                                    PhatSinhCoVND = item.PsCoVND,
+                                    ChiNhanhId = (ChiNhanhDtos?.FirstOrDefault(x => x.ChiNhanhUd == "TCT")?.Id) ?? null,
+                                    SoQuyen = (quyenSo != null && quyenSo.SoQuyen != null) ? quyenSo.SoQuyen : SystemConstants.NA,
+                                };
+                            soCaiRequests.Add(soCai2);
+                            phieuThu.PhieuThuCTRequests = phieuThuCts;
+                            phieuThu.SoCaiRequests = soCaiRequests;
+                            var result = await _phieuThu.CreateAsync(phieuThu);
+                            if (result.Id.HasValue && result.Id > 0)
+                            {
+                                if (phieuThu.QuyenSoId != null && phieuThu.SoPhieu != null)
+                                {
+                                    await _quyenSo.UpdateSoCTAsync(SystemConstants.LoaiPhieu.GiayBaoCo, phieuThu.QuyenSoId, phieuThu.SoPhieu);
+                                }
+                            }
+                            else
+                            {
+                                checkSuccsess = false;
+                            }
+                        }
+                        else if (item.Loai == SystemConstants.LoaiPhieu.GiayBaoNo)
+                        {
+                            var quyenSoBN = await _quyenSo.GetListAsync(SystemConstants.LoaiPhieu.GiayBaoNo);
+                            var quyenSo = quyenSoBN.FirstOrDefault(x => x.IsUser == true);
+                            string sokiTu0 = (quyenSo != null && quyenSo.SoKyTu0.HasValue) ? "D" + quyenSo.SoKyTu0.ToString() : "D0";
+                            PhieuChiRequest phieuChi = new PhieuChiRequest()
+                                {
+                                    LoaiPhieu = SystemConstants.LoaiPhieu.GiayBaoNo,
+                                    ChiNhanhId = (ChiNhanhDtos?.FirstOrDefault(x => x.ChiNhanhUd == "TCT")?.Id) ?? null,
+                                    GiaoDichId = (MaGiaoDichDtos?.FirstOrDefault(x => x.DMChungUd == "2")?.Id) ?? null,
+                                    KhachHangId = item.KhachHangId,
+                                    GhiNoTkId = TaiKhoanId,
+                                    NgayHT = item.Ngay,
+                                    NgayLap = item.Ngay,
+                                    SoPhieu = (quyenSo != null && quyenSo.SoCtHienTai.HasValue) ? (quyenSo.SoCtHienTai.Value + 1).ToString(sokiTu0) : "0",
+                                    QuyenSoId = (quyenSo != null && quyenSo.SoQuyen != null) ? quyenSo.SoQuyen : SystemConstants.NA,
+                                    NgoaiTeId = ngoaiTe?.Id,
+                                    TyGia = tyGiaNgoaiTe.TyGiaNgoaiTeDtos?.First().TyGia,
+                                    TongTienVND = item.PsNoVND,
+                                    DiaChi = item.DiaChi,
+                                    MaSoThue = item.MaSoThue,
+                                    IsPostSC = true,
+                                    IsSuaTien = false,
+                                    IsTaoTuDong = true,
+                                    BankAccountNumber = SoPhuNganHangDto.TenNganHang + ":" + SoPhuNganHangDto.SoTaiKhoan,
+                                    HoaDonGTGT = 0,                                 
+                                };
+                            var phieuChiCts = new List<PhieuChiCTRequest>();
+                            var phieuChiCt = new PhieuChiCTRequest()
+                                {
+                                    GhiNoTk = item.TkDu,
+                                    PsNoVND = item.PsNoVND,
+                                    ThanhToanVND = item.PsNoVND,
+                                    ThanhToanQd = item.PsNoVND,
+                                    TyGiaGS = tyGiaNgoaiTe.TyGiaNgoaiTeDtos?.First().TyGia,
+                                    DienGiai = item.DienGiai,
+                                    TienHt = item.PsNoVND,
+                                    LoaiThue = (DMChungDtos?.FirstOrDefault(x => x.DMChungUd == "1")?.Id) ?? null,
+                                };
+                            phieuChiCts.Add(phieuChiCt);
+                            List<SoCaiRequest> soCaiRequests = new List<SoCaiRequest>();
+                            var soCai1 = new SoCaiRequest()
+                                {
+                                    MaNk = SystemConstants.LoaiPhieu.GiayBaoNo,
+                                    MaGd = (MaGiaoDichDtos?.FirstOrDefault(x => x.DMChungUd == "2")?.Id) ?? null,
+                                    NgayHt = item.Ngay,
+                                    NgayLap = item.Ngay,
+                                    SoCt = (quyenSo != null && quyenSo.SoCtHienTai.HasValue) ? (quyenSo.SoCtHienTai.Value + 1).ToString(sokiTu0) : "0",
+                                    KhachHangId = item.KhachHangId,
+                                    DienGiai = item.DienGiai,
+                                    NhomDinhKhoan = SystemConstants.NhomDinhKhoan.DoanhThu,
+                                    Tk = TaiKhoanId,
+                                    TkDoiUng = item.TkDu,
+                                    PhatSinhNo = 0,
+                                    PhatSinhCo = 0,
+                                    NgoaiTeId = ngoaiTe?.Id,
+                                    TyGia = tyGiaNgoaiTe.TyGiaNgoaiTeDtos?.First().TyGia,
+                                    TyGiaHt = tyGiaNgoaiTe.TyGiaNgoaiTeDtos?.First().TyGia,
+                                    TyGiaHt2 = tyGiaNgoaiTe.TyGiaNgoaiTeDtos?.First().TyGia,
+                                    PhatSinhNoVND = item.PsNoVND,
+                                    PhatSinhCoVND = 0,
+                                    ChiNhanhId = (ChiNhanhDtos?.FirstOrDefault(x => x.ChiNhanhUd == "TCT")?.Id) ?? null,
+                                    SoQuyen = (quyenSo != null && quyenSo.SoQuyen != null) ? quyenSo.SoQuyen : SystemConstants.NA,
+                                };
+                            soCaiRequests.Add(soCai1);
+                            var soCai2 = new SoCaiRequest()
+                                {
+                                    MaNk = SystemConstants.LoaiPhieu.GiayBaoNo,
+                                    MaGd = (MaGiaoDichDtos?.FirstOrDefault(x => x.DMChungUd == "2")?.Id) ?? null,
+                                    NgayHt = item.Ngay,
+                                    NgayLap = item.Ngay,
+                                    SoCt = (quyenSo != null && quyenSo.SoCtHienTai.HasValue) ? (quyenSo.SoCtHienTai.Value + 1).ToString(sokiTu0) : "0",
+                                    KhachHangId = item.KhachHangId,
+                                    DienGiai = item.DienGiai,
+                                    NhomDinhKhoan = SystemConstants.NhomDinhKhoan.DoanhThu,
+                                    Tk = item.TkDu,
+                                    TkDoiUng = TaiKhoanId,
+                                    PhatSinhNo = 0,
+                                    PhatSinhCo = 0,
+                                    NgoaiTeId = ngoaiTe?.Id,
+                                    TyGia = tyGiaNgoaiTe.TyGiaNgoaiTeDtos?.First().TyGia,
+                                    TyGiaHt = tyGiaNgoaiTe.TyGiaNgoaiTeDtos?.First().TyGia,
+                                    TyGiaHt2 = tyGiaNgoaiTe.TyGiaNgoaiTeDtos?.First().TyGia,
+                                    PhatSinhNoVND = 0,
+                                    PhatSinhCoVND = item.PsNoVND,
+                                    ChiNhanhId = (ChiNhanhDtos?.FirstOrDefault(x => x.ChiNhanhUd == "TCT")?.Id) ?? null,
+                                    SoQuyen = (quyenSo != null && quyenSo.SoQuyen != null) ? quyenSo.SoQuyen : SystemConstants.NA,
+                                };
+                            soCaiRequests.Add(soCai2);
+                            phieuChi.PhieuChiCTRequests = phieuChiCts;
+                            phieuChi.SoCaiRequests = soCaiRequests;
+                            var result = await _phieuChi.CreateAsync(phieuChi);
+                            if (result.Id.HasValue && result.Id > 0)
+                            {
+                                if (phieuChi.QuyenSoId != null && phieuChi.SoPhieu != null)
+                                {
+                                    await _quyenSo.UpdateSoCTAsync(SystemConstants.LoaiPhieu.GiayBaoNo, phieuChi.QuyenSoId, phieuChi.SoPhieu);
+                                }
+                            }
+                            else
+                            {
+                                checkSuccsess = false;
+                            }
+                        }
+
+                    }
+                    if (checkSuccsess)
+                    {
+                        ShowModalMessage = true;
+                        CheckMessage = true;
+                        TextMessage = "Tạo giấy báo có/báo nợ thành công !";
+                        IsCheckData = false;
+                    }
+                    else
+                    {
+                        await DeleteSoPhuOldAsync();
+                        ShowModalMessage = true;
+                        CheckMessage = false;
+                        TextMessage = "Lỗi hệ thống! Vui lòng liên hệ bộ phận kỹ thuật để được hỗ trợ.";
+                    }
+                }
+                else
+                {
+                    await DeleteSoPhuOldAsync();
+                    ShowModalMessage = true;
+                    CheckMessage = false;
+                    TextMessage = "Chưa nhập mã khách hàng/Tài khoản đối ứng hoặc Tài khoản ngân hàng.";
+                    checkSuccsess = false;
+                }
+            }
+            catch (Exception ex)
+            {
+                await DeleteSoPhuOldAsync();
+                Console.WriteLine(ex.Message);
+                ShowModalMessage = true;
+                CheckMessage = false;
+                TextMessage = "Lỗi hệ thống! Vui lòng liên hệ bộ phận kỹ thuật để được hỗ trợ.";
+            }
+        }
+
+        StateHasChanged();
+    }
+    private void DefaultValueGhiCoTaiKhoan(List<TaiKhoanDto> taiKhoanDtos)
+    {
+        var item = taiKhoanDtos.FirstOrDefault(x=>x.TaiKhoanUd == "1121");
+        TaiKhoanId = item?.Id;
+        TaiKhoanNm = item?.TaiKhoanNm;
+        TaiKhoanUd = item?.TaiKhoanUd;
+    }
+    private void CloseModalMessage()
+    {
+        ShowModalMessage = false;
+    }
+    private async Task DeleteSoPhuOldAsync()
+    {
+        await _phieuChi.DeleteListSoPhuOldAsync(SoPhuNganHangDto.TenNganHang + ":" + SoPhuNganHangDto.SoTaiKhoan);
+        await _phieuThu.DeleteListSoPhuOldAsync(SoPhuNganHangDto.TenNganHang + ":" + SoPhuNganHangDto.SoTaiKhoan);
+    }
+}

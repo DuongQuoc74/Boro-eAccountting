@@ -1,0 +1,105 @@
+﻿@page "/thoigianlamviec"
+
+@using Blazored.LocalStorage
+@using tamkhoatech.ACWeb.Dto
+@inject NavigationManager NavigationManager
+@inject ILocalStorageService _localStorage
+
+<link rel="stylesheet" href="/Css/danh-sach-phieu.css">
+@if (hasRefreshed)
+{
+    <SfDialog ID="ThoiGianLamViec" Width="420px" @bind-Visible="ShowThoiGianLamViec" AllowPrerender="true" IsModal="true">
+    <DialogTemplates>
+        <Header>
+            <h1 class="thoiGianLamViec-title">
+                <img src="/images/TreeView/tamkhoa.ico" alt="icon" width="20" height="20">
+                <span style="text-align: center">
+                    Chọn thời gian làm việc
+                </span>
+            </h1>
+        </Header>
+        <Content>
+                <EditForm Model="SelectTime" Context="editForm" OnValidSubmit="@ConfirmThoiGianLamViecAsync">
+                <DataAnnotationsValidator />
+                <div class="mb-1">
+                    <div class="row">
+                        <div class="col-sm-4">
+                            <label for="TuNgay" class="form-label">Từ ngày:</label>
+                        </div>
+                        <div class="col-sm-7">
+                            <SfDatePicker TValue="DateTime?" CssClass="e-small" ShowClearButton="true" @bind-Value="@SelectTime.TuNgay" Format="dd/MM/yyyy" FullScreen="true">
+                            </SfDatePicker>
+                        </div>
+                    </div>
+                </div>
+                <div class="mb-1">
+                    <div class="row">
+                        <div class="col-sm-4">
+                            <label for="DenNgay" class="form-label">Đến ngày:</label>
+                        </div>
+                        <div class="col-sm-7">
+                            <SfDatePicker TValue="DateTime?" CssClass="e-small" ShowClearButton="true" @bind-Value="@SelectTime.DenNgay" Format="dd/MM/yyyy" FullScreen="true">
+                            </SfDatePicker>
+                        </div>
+                    </div>
+                </div>
+                <div class="row-line"></div>
+                    <div style="margin: 0px -8px" class="modal-footer">
+          @*           <button type="button" class="btn btn-sm btn-secondary" @onclick="Cancel">Hủy</button> *@
+                    <button type="submit" class="btn btn-sm btn-primary">Nhận</button>
+                </div>
+            </EditForm>
+        </Content>
+    </DialogTemplates>
+</SfDialog>
+}
+else
+{
+    <h3>Vui lòng chờ....</h3>
+}
+
+@code{
+    private bool hasRefreshed = false;
+    public bool ShowThoiGianLamViec { set; get; } = true;
+    private ThoiGianLamViecDto SelectTime = new ThoiGianLamViecDto();
+    protected override async Task OnInitializedAsync()
+    {
+        if (!hasRefreshed)
+        {
+            string tuNgay = await _localStorage.GetItemAsync<string>("TuNgayLamViec");
+            string denNgay = await _localStorage.GetItemAsync<string>("DenNgayLamViec");
+
+            if (!string.IsNullOrEmpty(tuNgay))
+            {
+                SelectTime.TuNgay = DateTime.Parse(tuNgay);
+            }
+            else
+            {
+                SelectTime.TuNgay = new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1);
+            }
+
+            if (!string.IsNullOrEmpty(denNgay))
+            {
+                SelectTime.DenNgay = DateTime.Parse(denNgay);
+            }else
+            {
+                SelectTime.DenNgay = new DateTime(DateTime.Now.Year, DateTime.Now.Month, DateTime.DaysInMonth(DateTime.Now.Year, DateTime.Now.Month));
+            }
+            hasRefreshed = true;
+        }
+
+    }
+    private async Task ConfirmThoiGianLamViecAsync()
+    {
+        await _localStorage.SetItemAsync("TuNgayLamViec", SelectTime.TuNgay);
+        await _localStorage.SetItemAsync("DenNgayLamViec", SelectTime.DenNgay);
+        var urlPath = await _localStorage.GetItemAsync<string>("urlPath");
+        NavigationManager.NavigateTo(urlPath, true);
+
+    }
+
+    private void Cancel()
+    {
+        ShowThoiGianLamViec = false; 
+    }
+}

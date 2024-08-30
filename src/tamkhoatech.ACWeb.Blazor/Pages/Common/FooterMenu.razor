@@ -1,0 +1,195 @@
+﻿<div id="nhap-lieu-footer" class="fixed-footer">
+    @if (IsSave)
+    {
+        <button type="submit" class="footerMenu-item" disabled="@IsSaveDisabled">
+            <img src="/images/Button/Luu.png" alt="icon" width="16" height="16">
+            Lưu
+        </button>
+    }
+    @if (IsCancel)
+    {
+        <button type="button" class="footerMenu-item" disabled="@IsCancelDisabled" @onclick="CancelAsync">
+            <img src="/images/Button/Close.png" alt="icon" width="16" height="16">
+            Hủy
+        </button>
+    }
+    @if (IsAdd)
+    {
+        <button type="button" class="footerMenu-item" disabled="@IsAddDisabled" @onclick="AddAsync">
+            <img src="/images/Button/Moi.png" alt="icon" width="16" height="16">
+            Mới
+        </button>
+    }
+    @if (IsEdit)
+    {
+        <button type="button" class="footerMenu-item" disabled="@IsEditDisabled" @onclick="EditAsync">
+            <img src="/images/Button/Sua.png" alt="icon" width="16" height="16">
+            Sửa
+        </button>
+    }
+    @if (IsDelete)
+    {
+        <button type="button" class="footerMenu-item" disabled="@IsDeleteDisabled" @onclick="DeleteAsync">
+            <img src="/images/Button/Xoa.png" alt="icon" width="16" height="16">
+            Xóa
+        </button>
+    }
+    @if (IsPrint)
+    {
+        <button type="button" class="footerMenu-item" disabled="@IsPrintDisabled" @onclick="PrintAsync">
+            <img src="/images/Button/Print.png" alt="icon" width="16" height="16">
+            In
+        </button>
+    }
+    @if (IsCopy)
+    {
+        <button type="button" class="footerMenu-item" disabled="@IsCopyDisabled" @onclick="CopyAsync">
+            <img src="/images/Button/Copy.png" alt="icon" width="16" height="16">
+            Copy
+        </button>
+    }    
+    @if (IsClose)
+    {
+        <button type="button" class="footerMenu-item" disabled="@IsCloseDisabled" @onclick="CloseAsync">
+            <img src="/images/Button/Dong.png" alt="icon" width="16" height="16">
+            Đóng
+        </button>
+    }
+    @if (IsNext)
+    {
+        <button style="width: auto" type="button" class="footerMenu-item" disabled="@IsNextDisabled" @onclick="FirstAsync">
+            <img src="/images/Button/first.png" alt="icon" width="22" height="22">
+        </button>
+        <button style="width: auto" type="button" class="footerMenu-item" disabled="@IsNextDisabled" @onclick="PreviousAsync">
+            <img src="/images/Button/prev.png" alt="icon" width="22" height="22">
+        </button>
+        <button style="width: auto" type="button" class="footerMenu-item" disabled="@IsNextDisabled" @onclick="NextAsync">
+            <img src="/images/Button/next.png" alt="icon" width="22" height="22">
+        </button>
+        <button style="width: auto" type="button" class="footerMenu-item" disabled="@IsNextDisabled" @onclick="LastAsync">
+            <img src="/images/Button/last.png" alt="icon" width="22" height="22">
+        </button>
+    }
+</div>
+
+@code {
+    [Inject] private IJSRuntime? JSRunTime { get; set; }
+    [Parameter]
+    public bool IsSave { set; get; } = false;
+    [Parameter]
+    public bool IsSaveDisabled { set; get; } = false;
+
+    [Parameter]
+    public bool IsCancel { set; get; } = false;
+    [Parameter]
+    public bool IsCancelDisabled { set; get; } = false;
+    [Parameter]
+    public EventCallback OnValidSubmitCancel { get; set; }
+
+    [Parameter]
+    public bool IsAdd { set; get; } = false;
+    [Parameter]
+    public bool IsAddDisabled { set; get; } = false;
+    [Parameter]
+    public EventCallback OnValidSubmitAdd { get; set; }
+
+    [Parameter]
+    public bool IsEdit { set; get; } = false;
+    [Parameter]
+    public bool IsEditDisabled { set; get; } = false;
+    [Parameter]
+    public EventCallback OnValidSubmitEdit { get; set; }
+
+    [Parameter]
+    public bool IsDelete { set; get; } = false;
+    [Parameter]
+    public bool IsDeleteDisabled { set; get; } = false;
+    [Parameter]
+    public EventCallback OnValidSubmitDelete { get; set; }
+
+    [Parameter]
+    public bool IsPrint { set; get; } = false;
+    [Parameter]
+    public bool IsPrintDisabled { set; get; } = false;
+    [Parameter]
+    public EventCallback OnValidSubmitPrint { get; set; }
+
+    [Parameter]
+    public bool IsCopy { set; get; } = false;
+    [Parameter]
+    public bool IsCopyDisabled { set; get; } = false;
+    [Parameter]
+    public EventCallback OnValidSubmitCopy { get; set; }
+
+    [Parameter]
+    public bool IsClose { set; get; } = false;
+    [Parameter]
+    public bool IsCloseDisabled { set; get; } = false;
+    [Parameter]
+    public EventCallback OnValidSubmitClose { get; set; }
+
+    [Parameter]
+    public bool IsNext { set; get; } = false;
+    [Parameter]
+    public bool IsNextDisabled { set; get; } = false;
+    [Parameter]
+    public EventCallback OnValidSubmitFirst { get; set; }
+    [Parameter]
+    public EventCallback OnValidSubmitLast { get; set; }
+    [Parameter]
+    public EventCallback OnValidSubmitNext { get; set; }
+    [Parameter]
+    public EventCallback OnValidSubmitPrevious { get; set; }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (JSRunTime != null)
+            await JSRunTime.InvokeAsync<object>("changeWidthContentBySidebar");
+    }
+    private async Task CancelAsync()
+    {
+        await OnValidSubmitCancel.InvokeAsync();
+    }
+    private async Task AddAsync()
+    {
+        await OnValidSubmitAdd.InvokeAsync();
+    }
+    private async Task EditAsync()
+    {
+        await OnValidSubmitEdit.InvokeAsync();
+    }
+    private async Task DeleteAsync()
+    {
+        await OnValidSubmitDelete.InvokeAsync();
+    }
+    private async Task PrintAsync()
+    {
+        await OnValidSubmitPrint.InvokeAsync();
+    }
+    private async Task CopyAsync()
+    {
+        await OnValidSubmitCopy.InvokeAsync();
+    }    
+    private async Task CloseAsync()
+    {
+        await OnValidSubmitClose.InvokeAsync();
+    }
+    private async Task FirstAsync()
+    {
+        await OnValidSubmitFirst.InvokeAsync();
+    }
+    private async Task LastAsync()
+    {
+        await OnValidSubmitLast.InvokeAsync();
+    }
+    private async Task NextAsync()
+    {
+        await OnValidSubmitNext.InvokeAsync();
+    }
+    private async Task PreviousAsync()
+    {
+        await OnValidSubmitPrevious.InvokeAsync();
+    }
+
+
+}

@@ -1,0 +1,568 @@
+﻿@page "/manhinhnhaplieu"
+@using Syncfusion.Blazor.Data
+@using Syncfusion.Blazor.DropDowns
+@using Syncfusion.Blazor.Grids
+@using Syncfusion.Blazor.Popups
+@using Syncfusion.Blazor.Inputs
+@using Syncfusion.Blazor.Buttons
+@using Blazored.LocalStorage;
+@using Volo.Abp.ObjectMapping
+@using tamkhoatech.ACWeb.Blazor.Pages.Common
+@using tamkhoatech.ACWeb.Constants
+@using tamkhoatech.ACWeb.Dto
+@using tamkhoatech.ACWeb.IService
+@using tamkhoatech.ACWeb.IService.IQuanLyHeThong
+
+@inject IObjectMapper _objectMapper
+@inject ILocalStorageService _localStorage
+@inject IJSRuntime _jsRuntime
+@inject IManHinhNhapService _manHinh
+@inject INgoaiTeService _ngoaiTe
+@inject ITaiKhoanService _taiKhoan
+
+
+<link rel="stylesheet" href="/Css/danh-sach-phieu.css">
+@if (hasRefreshed)
+{
+    <div @onkeyup="@OnKeyUp">
+        <div class="row gy-2 gx-3 align-items-center">
+            <div class="col-auto">
+                <h4>
+                    <label>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="25" height="25" fill="currentColor" class="bi bi-database-fill-add" viewBox="0 0 16 16">
+                            <path d="M12.5 16a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7m.5-5v1h1a.5.5 0 0 1 0 1h-1v1a.5.5 0 0 1-1 0v-1h-1a.5.5 0 0 1 0-1h1v-1a.5.5 0 0 1 1 0M8 1c-1.573 0-3.022.289-4.096.777C2.875 2.245 2 2.993 2 4s.875 1.755 1.904 2.223C4.978 6.711 6.427 7 8 7s3.022-.289 4.096-.777C13.125 5.755 14 5.007 14 4s-.875-1.755-1.904-2.223C11.022 1.289 9.573 1 8 1" />
+                            <path d="M2 7v-.839c.457.432 1.004.751 1.49.972C4.722 7.693 6.318 8 8 8s3.278-.307 4.51-.867c.486-.22 1.033-.54 1.49-.972V7c0 .424-.155.802-.411 1.133a4.51 4.51 0 0 0-4.815 1.843A12 12 0 0 1 8 10c-1.573 0-3.022-.289-4.096-.777C2.875 8.755 2 8.007 2 7m6.257 3.998L8 11c-1.682 0-3.278-.307-4.51-.867-.486-.22-1.033-.54-1.49-.972V10c0 1.007.875 1.755 1.904 2.223C4.978 12.711 6.427 13 8 13h.027a4.55 4.55 0 0 1 .23-2.002m-.002 3L8 14c-1.682 0-3.278-.307-4.51-.867-.486-.22-1.033-.54-1.49-.972V13c0 1.007.875 1.755 1.904 2.223C4.978 15.711 6.427 16 8 16c.536 0 1.058-.034 1.555-.097a4.5 4.5 0 0 1-1.3-1.905" />
+                        </svg>
+                        <strong>Danh sách màn hình nhập liệu</strong>
+                    </label>
+                </h4>
+            </div>
+        </div>
+        <div class="thong-ke">
+            <span> <b>F3</b>: Sửa <strong>|</strong> <b>F9</b>: Xuất excel </span>
+        </div>
+        <div class="row g-3">
+            <NavbarMenu Content="@ContentNavbarMenu"
+                        IsEdit="true" OnValidSubmitEdit="@EditAsync"
+                        IsRefresh="true" OnValidSubmitRefresh="@RefreshAsync"
+                        IsExcel="true" OnValidSubmitExcel="@ExportToExcelAsync"
+                        IsSearch="true" OnValidSubmitSearch="@SearchAsync"
+                        HelpUrl=@HelpUrl />
+        </div>
+        <br />
+        <div class="row g-3">
+            <SfGrid ID="gridManHinhNhap" @ref="SfGridMHN" DataSource="@ManHinhNhapDtos" EnablePersistence="true" AllowExcelExport="true" AllowSelection="true" AllowPaging="true" AllowSorting="true" AllowResizing="true" AllowReordering="true" ShowColumnChooser="true" Width="auto" Height="360">
+                <GridSelectionSettings CheckboxMode="CheckboxSelectionType.ResetOnRowClick" Type="Syncfusion.Blazor.Grids.SelectionType.Single"></GridSelectionSettings>
+                <GridEditSettings AllowAdding="false" AllowEditing="false" AllowDeleting="false"></GridEditSettings>
+                <GridPageSettings PageSize="10"></GridPageSettings>
+                <GridEvents OnRecordDoubleClick="RecordDoubleClickHandler" TValue="ManHinhNhapDto"></GridEvents>
+                <GridColumns>
+                    <GridColumn Type="ColumnType.CheckBox" TextAlign="TextAlign.Center" Width="50"></GridColumn>
+                    <GridColumn Field=@nameof(ManHinhNhapDto.Id) HeaderText="#" IsPrimaryKey="true" Visible="false" ShowInColumnChooser="false" TextAlign="TextAlign.Center" Width="120"></GridColumn>
+                    <GridColumn Field=@nameof(ManHinhNhapDto.ChungTuUd) HeaderText="Mã chứng từ" ShowInColumnChooser="false" TextAlign="TextAlign.Left" Width="150"></GridColumn>
+                    <GridColumn Field=@nameof(ManHinhNhapDto.ChungTuNm) HeaderText="Tên chứng từ" TextAlign="TextAlign.Left" Width="300"></GridColumn>
+                    <GridColumn Field=@nameof(ManHinhNhapDto.ChungTuNm2) HeaderText="Tên 2" TextAlign="TextAlign.Left" Width="300"></GridColumn>
+                    <GridColumn Field=@nameof(ManHinhNhapDto.SoLien) HeaderText="Số liên" TextAlign="TextAlign.Right" Width="150"></GridColumn>
+                    <GridColumn Field=@nameof(ManHinhNhapDto.MaCtIn) HeaderText="Mã chứng từ in" TextAlign="TextAlign.Left" Width="150"></GridColumn>
+                    <GridColumn Field=@nameof(ManHinhNhapDto.SttInBangKe) HeaderText="Số thứ tự in" TextAlign="TextAlign.Right" Width="150"></GridColumn>
+                </GridColumns>
+            </SfGrid>
+        </div>
+
+        <SfDialog ID="modalCreate" Width="680px" @bind-Visible="ShowModalEdit" AllowPrerender="true" IsModal="true">
+            <DialogTemplates>
+                <Header>
+                        <div class="title">
+                            <h1 class="modal-title fs-5">
+                                <img src="/images/Button/Sua.png" alt="icon" width="16" height="16">
+                                Chỉnh sửa
+                            </h1>
+                        </div>
+                </Header>
+                <Content>
+                    <div class="container">
+                        <EditForm Model="SelectManHinhNhap" Context="editFormCN" OnValidSubmit="@SaveAsync">
+                            <DataAnnotationsValidator />
+                            <div class="mb-1">
+                                <div class="row">
+                                    <div class="col-sm-3">
+                                        <label for="ChungTuUd" class="form-label">Mã chứng từ</label>
+                                    </div>
+                                    <div class="col-sm-3">
+                                        <SfTextBox ID="ChungTuUd" CssClass="e-small" @bind-Value="@(SelectManHinhNhap.ChungTuUd)" Enabled="false"></SfTextBox>
+                                    </div>
+                                    <div class="col-sm-3">
+                                        <label for="NgoaiTeId" class="form-label">Ngoại tệ ngầm định <span class="text-danger">*</span></label>
+                                    </div>
+                                    <div class="col-sm-3">
+                                        <SfComboBox @ref="ddNT" @bind-Value="@SelectManHinhNhap.NgoaiTeId" DataSource="@NgoaiTeDtos" AllowFiltering="true" Autofill="true" AllowCustom="false" CssClass="e-multi-column e-small" PopupWidth="350" PopupHeight="300">
+                                            <ComboBoxEvents TValue="int?" TItem="NgoaiTeDto" Filtering="OnFilteringNgoaiTe"></ComboBoxEvents>
+                                            <ComboBoxFieldSettings Text="NgoaiTeUd" Value="Id"></ComboBoxFieldSettings>
+                                            <ComboBoxTemplates TItem="NgoaiTeDto">
+                                                <HeaderTemplate>
+                                                    <table class="header-combo">
+                                                        <tr>
+                                                            <th>Mã ngoại tệ</th>
+                                                            <th>Tên ngoại tệ</th>
+                                                            <th>Tên 2</th>
+                                                        </tr>
+                                                    </table>
+                                                </HeaderTemplate>
+                                                <ItemTemplate Context="itemContext">
+                                                    <table>
+                                                        <tbody>
+                                                            <tr>
+                                                                <td><span>@((itemContext as NgoaiTeDto).NgoaiTeUd)</span></td>
+                                                                <td><span>@((itemContext as NgoaiTeDto).NgoaiTeNm)</span></td>
+                                                                <td><span>@((itemContext as NgoaiTeDto).NgoaiTeNm2)</span></td>
+                                                            </tr>
+                                                        </tbody>
+                                                    </table>
+                                                </ItemTemplate>
+                                            </ComboBoxTemplates>
+                                        </SfComboBox>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="mb-1">
+                                <div class="row">
+                                    <div class="col-sm-3">
+                                        <label for="ChungTuNm" class="form-label">Tên chứng từ  <span class="text-danger">*</span></label>
+                                    </div>
+                                    <div class="col-sm-9">
+                                        <SfTextBox ID="ChungTuNm" CssClass="e-small" @bind-Value="@(SelectManHinhNhap.ChungTuNm)"></SfTextBox>
+                                    </div>
+                                </div>
+                            </div>                 
+                            <div class="mb-1">
+                                <div class="row">
+                                    <div class="col-sm-3">
+                                        <label for="ChungTuNm2" class="form-label">Tên 2</label>
+                                    </div>
+                                    <div class="col-sm-9">
+                                        <SfTextBox ID="ChungTuNm2" CssClass="e-small" @bind-Value="@(SelectManHinhNhap.ChungTuNm2)"></SfTextBox>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="mb-1">
+                                <div class="row">
+                                    <div class="col-sm-3">
+                                        <label for="SoLien" class="form-label">Số liên khi in</label>
+                                    </div>
+                                    <div class="col-sm-3">
+                                        <SfNumericTextBox ShowSpinButton="false" ID="SoLien" Format="N0" CssClass="e-small" Min="0" @bind-Value="@(SelectManHinhNhap.SoLien)"></SfNumericTextBox>
+                                    </div>
+                                    <div class="col-sm-3">
+                                        <label for="SttInBangKe" class="form-label">Stt khi in bảng kê</label>
+                                    </div>
+                                    <div class="col-sm-3">
+                                        <SfNumericTextBox ShowSpinButton="false" ID="SttInBangKe" Format="N0" CssClass="e-small" Min="0" @bind-Value="@(SelectManHinhNhap.SttInBangKe)"></SfNumericTextBox>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="mb-1">
+                                <div class="row">
+                                    <div class="col-sm-3">
+                                        <label for="KyHieuMauHD" class="form-label">Ký hiệu mẫu HD</label>
+                                    </div>
+                                    <div class="col-sm-3">
+                                        <SfTextBox ID="KyHieuMauHD" CssClass="e-small" @bind-Value="@(SelectManHinhNhap.KyHieuMauHD)"></SfTextBox>
+                                    </div>
+                                    <div class="col-sm-3">
+                                        <label for="TkThueGTGT" class="form-label">Tài khoản thuế GTGT</label>
+                                    </div>
+                                    <div class="col-sm-3">
+                                        <SfComboBox @ref="ddTK" @bind-Value="@SelectManHinhNhap.TkThueGTGT" DataSource="@TaiKhoanDtos" AllowFiltering="true" Autofill="true" AllowCustom="false" CssClass="e-multi-column e-small" PopupWidth="800" PopupHeight="300">
+                                            <ComboBoxEvents TValue="int?" TItem="TaiKhoanDto" Filtering="OnFilteringTaiKhoan"></ComboBoxEvents>
+                                            <ComboBoxFieldSettings Text="TaiKhoanUd" Value="Id"></ComboBoxFieldSettings>
+                                            <ComboBoxTemplates TItem="TaiKhoanDto">
+                                                <HeaderTemplate>
+                                                    <table class="header-combo">
+                                                        <tr>
+                                                            <th style="width:150px">Mã tài khoản</th>
+                                                            <th>Tên tài khoản</th>
+                                                            <th>Tên 2</th>
+                                                        </tr>
+                                                    </table>
+                                                </HeaderTemplate>
+                                                <ItemTemplate Context="itemContext">
+                                                    <table>
+                                                        <tbody>
+                                                            <tr>
+                                                                <td style="width:150px"><span>@((itemContext as TaiKhoanDto).TaiKhoanUd)</span></td>
+                                                                <td><span>@((itemContext as TaiKhoanDto).TaiKhoanNm)</span></td>
+                                                                <td><span>@((itemContext as TaiKhoanDto).TaiKhoanNm2)</span></td>
+                                                            </tr>
+                                                        </tbody>
+                                                    </table>
+                                                </ItemTemplate>
+                                            </ComboBoxTemplates>
+                                        </SfComboBox>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="mb-1">
+                                <div class="row">
+                                    <div class="col-sm-9">
+                                        <label for="SoLuongLoc" class="form-label">Số lượng chứng từ lọc sẵn khi vào màn hình lập chứng từ</label>
+                                    </div>
+                                    <div class="col-sm-3">
+                                        <SfNumericTextBox ShowSpinButton="false" ID="SoLuongLoc" Format="N0" CssClass="e-small" Min="0" @bind-Value="@(SelectManHinhNhap.SoLuongLoc)"></SfNumericTextBox>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="mb-1">
+                                <div class="row">
+                                    <div style="display: flex; align-items: center" class="col-sm-4">
+                                        <label for="IsMaTuDo" class="form-label">Sử dụng mã tự do</label>
+                                    </div>
+                                    <div style="display: flex; align-items: center" class="col-sm-6">
+                                        <SfCheckBox Label="Chọn: Có - Bỏ chọn: không" @bind-Checked="SelectManHinhNhap.IsMaTuDo" LabelPosition="Syncfusion.Blazor.Buttons.LabelPosition.After"></SfCheckBox>
+                                    </div>
+                                    @if(SelectManHinhNhap.IsMaTuDo == true)
+                                    {
+                                        <div class="col-sm-2">
+                                            <button style="width: 100%;" type="button" class="btn btn-sm btn-them-xoa m-2" @onclick="OpenModalTuDoAsync">Tùy chọn </button>
+                                        </div>
+                                    }
+                                </div>
+                            </div>
+                            <div class="mb-1">
+                                <div class="row">
+                                    <div class="col-sm-4">
+                                        <label for="IsMaVuViec" class="form-label">Sử dụng mã vụ việc</label>
+                                    </div>
+                                    <div class="col-sm-6">
+                                        <SfCheckBox Label="Chọn: Có - Bỏ chọn: không" @bind-Checked="SelectManHinhNhap.IsMaVuViec" LabelPosition="Syncfusion.Blazor.Buttons.LabelPosition.After"></SfCheckBox>
+                                    </div>
+                                </div>
+                            </div>            
+                            <div class="mb-1">
+                                <div class="row">
+                                    <div class="col-sm-4">
+                                        <label for="IsMaPhi" class="form-label">Sử dụng mã phí</label>
+                                    </div>
+                                    <div class="col-sm-8">
+                                        <SfCheckBox Label="Chọn: Có - Bỏ chọn: không" @bind-Checked="SelectManHinhNhap.IsMaPhi" LabelPosition="Syncfusion.Blazor.Buttons.LabelPosition.After"></SfCheckBox>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="mb-1">
+                                <div class="row">
+                                    <div class="col-sm-4">
+                                        <label for="IsMaDieuChinh" class="form-label">Sử dụng mã điều chỉnh</label>
+                                    </div>
+                                    <div class="col-sm-8">
+                                        <SfCheckBox Label="Chọn: Có - Bỏ chọn: không" @bind-Checked="SelectManHinhNhap.IsMaDieuChinh" LabelPosition="Syncfusion.Blazor.Buttons.LabelPosition.After"></SfCheckBox>
+                                    </div>
+                                </div>
+                            </div>           
+                            <div class="mb-1">
+                                <div class="row">
+                                    <div class="col-sm-4">
+                                        <label for="IsBpBanHang" class="form-label">Sử dụng mã bộ phận bán hàng</label>
+                                    </div>
+                                    <div class="col-sm-8">
+                                        <SfCheckBox Label="Chọn: Có - Bỏ chọn: không" @bind-Checked="SelectManHinhNhap.IsBpBanHang" LabelPosition="Syncfusion.Blazor.Buttons.LabelPosition.After"></SfCheckBox>
+                                    </div>
+                                </div>
+                            </div>                     
+                           
+                            <div class="mb-1">
+                                <div class="row">
+                                    <div class="col-sm-4">
+                                        <label for="IsTrungSoCt" class="form-label">Cho phép trùng số chứng từ</label>
+                                    </div>
+                                    <div class="col-sm-8">
+                                        <SfCheckBox Label="Chọn: Có - Bỏ chọn: không" @bind-Checked="SelectManHinhNhap.IsTrungSoCt" LabelPosition="Syncfusion.Blazor.Buttons.LabelPosition.After"></SfCheckBox>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="mb-1">
+                                <div class="row">
+                                    <div class="col-sm-4">
+                                        <label for="IsTenNguoiGiaoDich" class="form-label">Sử dụng trường tên người gd</label>
+                                    </div>
+                                    <div class="col-sm-8">
+                                        <SfCheckBox Label="Chọn: Có - Bỏ chọn: không" @bind-Checked="SelectManHinhNhap.IsTenNguoiGiaoDich" LabelPosition="Syncfusion.Blazor.Buttons.LabelPosition.After"></SfCheckBox>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="mb-1">
+                                <div class="row">
+                                    <div class="col-sm-4">
+                                        <label for="IsNgayLapCt" class="form-label">Sử dụng trường ngày lập ct</label>
+                                    </div>
+                                    <div class="col-sm-8">
+                                        <SfCheckBox Label="Chọn: Có - Bỏ chọn: không" @bind-Checked="SelectManHinhNhap.IsNgayLapCt" LabelPosition="Syncfusion.Blazor.Buttons.LabelPosition.After"></SfCheckBox>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="mb-1">
+                                <div class="row">
+                                    <div class="col-sm-4">
+                                        <label for="IsLocNguoiDung" class="form-label">Lọc theo người sử dụng</label>
+                                    </div>
+                                    <div class="col-sm-8">
+                                        <SfCheckBox Label="Chọn: Có - Bỏ chọn: không" @bind-Checked="SelectManHinhNhap.IsLocNguoiDung" LabelPosition="Syncfusion.Blazor.Buttons.LabelPosition.After"></SfCheckBox>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="mb-1">
+                                <div class="row">
+                                    <div class="col-sm-4">
+                                        <label for="IsChon" class="form-label">Chọn In và xóa nhiều dòng</label>
+                                    </div>
+                                    <div class="col-sm-8">
+                                        <SfCheckBox Label="Chọn: Có - Bỏ chọn: không" @bind-Checked="SelectManHinhNhap.IsChon" LabelPosition="Syncfusion.Blazor.Buttons.LabelPosition.After"></SfCheckBox>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="mb-1">
+                                <div class="row">
+                                    <div class="col-sm-4">
+                                        <label for="IsThanhPham" class="form-label">Sử dụng mã thành phẩm</label>
+                                    </div>
+                                    <div class="col-sm-8">
+                                        <SfCheckBox Label="Chọn: Có - Bỏ chọn: không" @bind-Checked="SelectManHinhNhap.IsThanhPham" LabelPosition="Syncfusion.Blazor.Buttons.LabelPosition.After"></SfCheckBox>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="mb-1">
+                                <div class="row">
+                                    <div class="col-sm-4">
+                                        <label for="IsBoPhanHT" class="form-label">Sử dụng mã bộ phận ht</label>
+                                    </div>
+                                    <div class="col-sm-8">
+                                        <SfCheckBox Label="Chọn: Có - Bỏ chọn: không" @bind-Checked="SelectManHinhNhap.IsBoPhanHT" LabelPosition="Syncfusion.Blazor.Buttons.LabelPosition.After"></SfCheckBox>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="mb-1">
+                                <div class="row">
+                                    <div class="col-sm-4">
+                                        <label for="IsMaTapHopChiPhi" class="form-label">Sử dụng mã tập hợp chi phí</label>
+                                    </div>
+                                    <div class="col-sm-8">
+                                        <SfCheckBox Label="Chọn: Có - Bỏ chọn: không" @bind-Checked="SelectManHinhNhap.IsMaTapHopChiPhi" LabelPosition="Syncfusion.Blazor.Buttons.LabelPosition.After"></SfCheckBox>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="mb-1">
+                                <div class="row">
+                                    <div class="col-sm-4">
+                                        <label for="IsMaCongTrinh" class="form-label">Sử dụng mã công trình</label>
+                                    </div>
+                                    <div class="col-sm-8">
+                                        <SfCheckBox Label="Chọn: Có - Bỏ chọn: không" @bind-Checked="SelectManHinhNhap.IsMaCongTrinh" LabelPosition="Syncfusion.Blazor.Buttons.LabelPosition.After"></SfCheckBox>
+                                    </div>
+                                </div>
+                            </div>
+                            <br />
+                            <br />
+                            <div class="e-dialog e-footer-content">
+                                <button type="button" class="btn btn-sm btn-danger" @onclick="CloseModalEdit">Hủy</button>
+                                <button type="submit" class="btn btn-sm btn-primary">Nhận</button>
+                            </div>
+                        </EditForm>
+                    </div>
+                </Content>
+            </DialogTemplates>
+        </SfDialog>
+        <SfDialog ID="modalCreateCt" Width="90%" @bind-Visible="ShowModalEditCt" AllowPrerender="true" IsModal="true">
+            <DialogTemplates>
+                <Header>
+                    <div class="title">
+                        <h1 class="modal-title fs-5">
+                            <img src="/images/Button/Sua.png" alt="icon" width="16" height="16">
+                           Thông tin về các trường tự do. Esc: Thoát
+                        </h1>
+                    </div>
+                </Header>
+                <Content>
+                    <div class="row">
+                        <SfGrid ID="gridManHinhNhapCt" @ref="SfGridCt" DataSource="@ManHinhNhapCtDtos" EnablePersistence="true" AllowSelection="true" AllowSorting="true" AllowResizing="true" AllowReordering="true" Width="auto" Height="460">
+                            <GridEditSettings AllowAdding="false" AllowEditing="true" AllowDeleting="false"></GridEditSettings>
+                            <GridPageSettings PageSize="10"></GridPageSettings>
+                            <GridColumns>
+                                <GridColumn Field=@nameof(ManHinhNhapCtDto.Id) HeaderText="#" Visible="false" IsPrimaryKey="true" TextAlign="TextAlign.Left" Width="20"></GridColumn>
+                                <GridColumn Field=@nameof(ManHinhNhapCtDto.IsUse) HeaderText="Sử dụng" TextAlign="TextAlign.Center" Width="120">
+                                    <Template>
+                                        @{
+                                            var item = (context as ManHinhNhapCtDto);
+                                            if (item != null)
+                                            {
+                                                <SfCheckBox @bind-Checked="item.IsUse"></SfCheckBox>
+                                            }
+                                        }
+                                    </Template>
+                                </GridColumn>
+                                <GridColumn Field=@nameof(ManHinhNhapCtDto.ColumnUd) HeaderText="Mã cột" TextAlign="TextAlign.Left" AllowEditing ="false" Width="120"></GridColumn>
+                                <GridColumn Field=@nameof(ManHinhNhapCtDto.ColumnCaption) HeaderText="Tiêu đề" TextAlign="TextAlign.Left" AllowEditing ="false" Width="300"></GridColumn>
+                                <GridColumn Field=@nameof(ManHinhNhapCtDto.ColumnCaption2) HeaderText="Tiêu đề2" TextAlign="TextAlign.Left" AllowEditing="false" Width="300"></GridColumn>
+                            </GridColumns>
+                        </SfGrid>
+                    </div>
+                </Content>
+            </DialogTemplates>
+        </SfDialog>
+        <ModalErrorMessage ShowModalMessage="@ShowModalMessage" CheckMessage="@CheckMessage" TextMessage="@TextMessage"
+                           OnCloseMessage="CloseModalMessage" />
+    </div>
+}
+else
+{
+    <h3>Vui lòng chờ....</h3>
+}
+<style>
+    #navbarMenu-edit {
+        margin: 0 0 0 16px;
+    }
+
+    #SoLien, #SttInBangKe, #SoLuongLoc {
+        text-align: end;
+        padding-right: 8px;
+    }
+</style>
+
+@code {
+    private string ContentNavbarMenu = "màn hình nhập liệu";
+    private string HelpUrl = "https://tamkhoatech.vn/huong-dan-su-dung/danh-sach-cac-man-hinh-nhap-lieu/";
+    private bool hasRefreshed = false;
+    private bool ShowModalMessage = false;
+    private bool CheckMessage = false;
+    private string? TextMessage { set; get; }
+    private SfGrid<ManHinhNhapDto> SfGridMHN = new SfGrid<ManHinhNhapDto>();
+    public List<ManHinhNhapDto> ManHinhNhapDtos = new List<ManHinhNhapDto>();
+
+    private bool ShowModalEdit = false;
+    public ManHinhNhapRequest SelectManHinhNhap = new ManHinhNhapRequest();
+    private List<NgoaiTeDto>? NgoaiTeDtos;
+    private SfComboBox<int?, NgoaiTeDto> ddNT = new SfComboBox<int?, NgoaiTeDto>();
+    private List<TaiKhoanDto>? TaiKhoanDtos;
+    private SfComboBox<int?, TaiKhoanDto> ddTK = new SfComboBox<int?, TaiKhoanDto>();
+
+    private bool ShowModalEditCt = false;
+    public List<ManHinhNhapCtDto> ManHinhNhapCtDtos = new List<ManHinhNhapCtDto>();
+    private SfGrid<ManHinhNhapCtDto> SfGridCt = new SfGrid<ManHinhNhapCtDto>();
+    protected override async Task OnInitializedAsync()
+    {
+        if (!hasRefreshed)
+        {
+            ManHinhNhapDtos = await _manHinh.GetListAsync();
+            NgoaiTeDtos = await _ngoaiTe.GetListAsync();
+            TaiKhoanDtos = await _taiKhoan.GetListAsync();
+            hasRefreshed = true;
+        }
+    }
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender)
+        {
+            await _jsRuntime.InvokeVoidAsync("renameShowColumn", "Tìm kiếm...");
+            await _jsRuntime.InvokeVoidAsync("getDotNetObjectReference", DotNetObjectReference.Create(this));
+        }
+    }
+    private async Task OnKeyUp(KeyboardEventArgs args)
+    {
+        if(args.Key == "F3")
+        {
+            await this.EditAsync();
+        }     
+        else if(args.Key == "F9")
+        {
+            await this.ExportToExcelAsync();
+        }
+
+    }
+    //Navbar menu
+    private async Task EditAsync()
+    {
+        var selectedRecords = await SfGridMHN.GetSelectedRecordsAsync();
+        if (selectedRecords.Count > 0)
+        {
+            var item = await _manHinh.GetByIdAsync(selectedRecords.First().Id);
+            SelectManHinhNhap = _objectMapper.Map<ManHinhNhapDto,ManHinhNhapRequest>(item);
+            ShowModalEdit = true;
+        }
+        else
+        {
+            TextMessage = "Bạn chưa chọn dòng.";
+            CheckMessage = false;
+            ShowModalMessage = true;
+        }
+        StateHasChanged();
+    }
+    public async Task OnFilteringNgoaiTe(Syncfusion.Blazor.DropDowns.FilteringEventArgs args)
+    {
+        args.PreventDefaultAction = true;
+        var orWhere = WhereFilter.Or(new List<WhereFilter> {
+            new WhereFilter() { Field = "NgoaiTeUd", Operator = "contains", value = args.Text, IgnoreCase = true },
+            new WhereFilter() { Field = "NgoaiTeNm", Operator = "contains", value = args.Text, IgnoreCase = true }
+        });
+        var query = new Query().Where(orWhere);
+        query = !string.IsNullOrEmpty(args.Text) ? query : new Query();
+        await ddNT.FilterAsync(NgoaiTeDtos, query);
+    }
+    public async Task OnFilteringTaiKhoan(Syncfusion.Blazor.DropDowns.FilteringEventArgs args)
+    {
+        args.PreventDefaultAction = true;
+        var orWhere = WhereFilter.Or(new List<WhereFilter> {
+            new WhereFilter() { Field = "TaiKhoanUd", Operator = "contains", value = args.Text, IgnoreCase = true },
+            new WhereFilter() { Field = "TaiKhoanNm", Operator = "contains", value = args.Text, IgnoreCase = true }
+        });
+        var query = new Query().Where(orWhere);
+        query = !string.IsNullOrEmpty(args.Text) ? query : new Query();
+        await ddTK.FilterAsync(TaiKhoanDtos, query);
+    }
+    private async Task OpenModalTuDoAsync()
+    {
+        ManHinhNhapCtDtos = await _manHinh.GetListManHinhNhapCtAsync(SelectManHinhNhap.Id);
+        await this.SfGridCt.Refresh();
+        ShowModalEditCt = true;
+    }    
+    private async Task SaveAsync()
+    {
+        var result = await _manHinh.UpdateAsync(SelectManHinhNhap.Id, SelectManHinhNhap);
+        if (SelectManHinhNhap.Id == ManHinhNhapCtDtos.FirstOrDefault()?.ManHinhNhapId)
+            await _manHinh.UpdateManHinhNhapCtAsync(ManHinhNhapCtDtos);
+        TextMessage = result.Message;
+        CheckMessage = result.IsSuccessed;
+        ShowModalMessage = true;
+    }
+    private void CloseModalEdit()
+    {
+        ShowModalEdit = false;
+    }
+    private async Task RefreshAsync()
+    {
+        await this.SfGridMHN.SearchAsync(string.Empty);
+        ManHinhNhapDtos = await _manHinh.GetListAsync();
+    }
+    private async Task ExportToExcelAsync()
+    {
+        string name = "Danh sách màn hình nhập liệu";
+        var content = _manHinh.ExportExcel(ManHinhNhapDtos, name);
+        var fileName = $"{name}.xlsx";
+        var contentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+        var base64 = Convert.ToBase64String(content);
+        await _jsRuntime.InvokeVoidAsync("downloadFileFromBase64", fileName, contentType, base64);
+    }
+    //Call Back From Js function
+    [JSInvokable("searchInputNavbar")]
+    public async Task SearchAsync(string search)
+    {
+        await this.SfGridMHN.SearchAsync(search);
+    }
+    public async Task RecordDoubleClickHandler(RecordDoubleClickEventArgs<ManHinhNhapDto> args)
+    {
+        var item = await _manHinh.GetByIdAsync(args.RowData.Id);
+        SelectManHinhNhap = _objectMapper.Map<ManHinhNhapDto, ManHinhNhapRequest>(item);
+        ShowModalEdit = true;
+        StateHasChanged();
+    }
+    private void CloseModalMessage()
+    {
+        ShowModalMessage = false;
+    }
+}

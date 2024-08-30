@@ -1,0 +1,692 @@
+﻿@page "/kho"
+@using Syncfusion.Blazor.Grids
+@using Syncfusion.Blazor.Popups
+@using Syncfusion.Blazor.Inputs
+@using Syncfusion.Blazor.Buttons
+@using Syncfusion.Blazor.DropDowns
+@using Volo.Abp.ObjectMapping
+@using Blazored.LocalStorage;
+@using tamkhoatech.ACWeb.Constants
+@using tamkhoatech.ACWeb.Dto
+@using tamkhoatech.ACWeb.IService
+
+@inject NavigationManager NavigationManager
+@inject IObjectMapper ObjectMapper
+@inject ILocalStorageService _localStorage
+@inject IKhoService _kho
+@inject IChiNhanhService _chiNhanh
+
+@if (hasRefreshed)
+{
+    <div class="row gy-2 gx-3 align-items-center">
+        <div class="col-auto">
+            <h4>
+                <label>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="25" height="25" fill="currentColor" class="bi bi-diagram-3-fill" viewBox="0 0 16 16">
+                        <path fill-rule="evenodd" d="M6 3.5A1.5 1.5 0 0 1 7.5 2h1A1.5 1.5 0 0 1 10 3.5v1A1.5 1.5 0 0 1 8.5 6v1H14a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-1 0V8h-5v.5a.5.5 0 0 1-1 0V8h-5v.5a.5.5 0 0 1-1 0v-1A.5.5 0 0 1 2 7h5.5V6A1.5 1.5 0 0 1 6 4.5zm-6 8A1.5 1.5 0 0 1 1.5 10h1A1.5 1.5 0 0 1 4 11.5v1A1.5 1.5 0 0 1 2.5 14h-1A1.5 1.5 0 0 1 0 12.5zm6 0A1.5 1.5 0 0 1 7.5 10h1a1.5 1.5 0 0 1 1.5 1.5v1A1.5 1.5 0 0 1 8.5 14h-1A1.5 1.5 0 0 1 6 12.5zm6 0a1.5 1.5 0 0 1 1.5-1.5h1a1.5 1.5 0 0 1 1.5 1.5v1a1.5 1.5 0 0 1-1.5 1.5h-1a1.5 1.5 0 0 1-1.5-1.5z" />
+                    </svg>
+                    Danh sách kho
+                </label>
+            </h4>
+        </div>
+    </div>
+    <br>
+    <div class="row g-3">
+        <nav class="navbar navbar-expand-lg bg-body-tertiary navEdit">
+            <div class="container-fluid">
+                <div class="navbar-brand">
+                    <SfTooltip ID="tao" Target="#target" Content="Tạo kho" Position="Position.RightTop" OpensOn="Hover">
+                        <button id="target" type="button" class="btn  btn-outline-success" @onclick="CreateAsync">
+                            <img src="/images/Button/Moi.png" alt="icon" width="16" height="16">
+                            Mới
+                        </button>
+                    </SfTooltip>
+                </div>
+                <div class="navbar-brand">
+                    <SfTooltip ID="sua" Target="#target" Content="Sửa kho" Position="Position.RightTop" OpensOn="Hover">
+                        <button id="target" type="button" class="btn  btn-outline-success" @onclick="EditAsync">
+                            <img src="/images/Button/Sua.png" alt="icon" width="16" height="16">
+                            Sửa
+                        </button>
+                    </SfTooltip>
+                </div>
+                <div class="navbar-brand">
+                    <SfTooltip ID="xoa" Target="#target" Content="Xóa kho" Position="Position.RightTop" OpensOn="Hover">
+                        <button id="target" type="button" class="btn btn-outline-success" @onclick="DeleteAsync">
+                            <img src="/images/Button/Xoa.png" alt="icon" width="16" height="16">
+                            Xóa
+                        </button>
+                    </SfTooltip>
+                </div>                                       
+                <div class="navbar-brand">
+                    <SfTooltip ID="xuat" Target="#target" Content="Xuất Excel" Position="Position.RightTop" OpensOn="Hover">
+                        <button id="target" type="button" class="btn btn-outline-success" @onclick="ExportToExcelAsync">
+                            <img src="/images/Button/xls.png" alt="icon" width="16" height="16">
+                            Excel
+                        </button>
+                    </SfTooltip>
+                </div>                
+                <div class="navbar-brand">
+                    <SfTooltip ID="an" Target="#target" Content="Ẩn hoặc hiện cột" Position="Position.RightTop" OpensOn="Hover">
+                        <button id="target" type="button" class="btn btn-outline-success" @onclick="ShowColumn">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-body-text" viewBox="0 0 16 16">
+                                <path fill-rule="evenodd" d="M0 .5A.5.5 0 0 1 .5 0h4a.5.5 0 0 1 0 1h-4A.5.5 0 0 1 0 .5m0 2A.5.5 0 0 1 .5 2h7a.5.5 0 0 1 0 1h-7a.5.5 0 0 1-.5-.5m9 0a.5.5 0 0 1 .5-.5h5a.5.5 0 0 1 0 1h-5a.5.5 0 0 1-.5-.5m-9 2A.5.5 0 0 1 .5 4h3a.5.5 0 0 1 0 1h-3a.5.5 0 0 1-.5-.5m5 0a.5.5 0 0 1 .5-.5h5a.5.5 0 0 1 0 1h-5a.5.5 0 0 1-.5-.5m7 0a.5.5 0 0 1 .5-.5h3a.5.5 0 0 1 0 1h-3a.5.5 0 0 1-.5-.5m-12 2A.5.5 0 0 1 .5 6h6a.5.5 0 0 1 0 1h-6a.5.5 0 0 1-.5-.5m8 0a.5.5 0 0 1 .5-.5h5a.5.5 0 0 1 0 1h-5a.5.5 0 0 1-.5-.5m-8 2A.5.5 0 0 1 .5 8h5a.5.5 0 0 1 0 1h-5a.5.5 0 0 1-.5-.5m7 0a.5.5 0 0 1 .5-.5h7a.5.5 0 0 1 0 1h-7a.5.5 0 0 1-.5-.5m-7 2a.5.5 0 0 1 .5-.5h8a.5.5 0 0 1 0 1h-8a.5.5 0 0 1-.5-.5m0 2a.5.5 0 0 1 .5-.5h4a.5.5 0 0 1 0 1h-4a.5.5 0 0 1-.5-.5m0 2a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 0 1h-2a.5.5 0 0 1-.5-.5" />
+                            </svg>
+                            Ẩn cột
+                        </button>
+                    </SfTooltip>
+                </div>              
+                <div class="navbar-brand">
+                    <SfTooltip ID="refresh" Target="#target" Content="Làm mới" Position="Position.RightTop" OpensOn="Hover">
+                        <button id="target" class="btn btn-outline-success" @onclick="Refresh">
+                            <img src="/images/Button/Refesh.png" alt="icon" width="16" height="16">
+                        </button>
+                    </SfTooltip>
+                </div>
+                <div class="d-flex ms-auto" role="search">
+                    <div class="flex-grow-1">
+                        <input class="form-control" @bind-value=@search placeholder="Nhập để tìm kiếm..." aria-label="Search">
+                    </div>
+                    <button style="margin: 0px 0px 0px 8px;" class="btn btn-outline-success" @onclick="Search">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-search" viewBox="0 0 16 16">
+                            <path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001q.044.06.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1 1 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0" />
+                        </svg>
+                    </button>
+                    @* <SfTooltip ID="huongDan" Target="#target" Content="Hướng dẫn" Position="Position.RightTop" OpensOn="Hover">
+                        <a id="target" style="margin: 0px 16px 0px 8px;" type="button" class="btn btn-outline-success" href="https://tamkhoatech.vn/huong-dan-su-dung/danh-sach-ma-chi-nhanh/" target="_blank">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-question-circle-fill" viewBox="0 0 16 16">
+                                <path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0M5.496 6.033h.825c.138 0 .248-.113.266-.25.09-.656.54-1.134 1.342-1.134.686 0 1.314.343 1.314 1.168 0 .635-.374.927-.965 1.371-.673.489-1.206 1.06-1.168 1.987l.003.217a.25.25 0 0 0 .25.246h.811a.25.25 0 0 0 .25-.25v-.105c0-.718.273-.927 1.01-1.486.609-.463 1.244-.977 1.244-2.056 0-1.511-1.276-2.241-2.673-2.241-1.267 0-2.655.59-2.75 2.286a.237.237 0 0 0 .241.247m2.325 6.443c.61 0 1.029-.394 1.029-.927 0-.552-.42-.94-1.029-.94-.584 0-1.009.388-1.009.94 0 .533.425.927 1.01.927z" />
+                            </svg>
+                        </a>
+                    </SfTooltip> *@
+                </div>
+
+            </div>
+        </nav>
+    </div>
+    <br />
+    <div class="row g-3">
+        <SfGrid ID="Kho" @ref="SfGridKHO" DataSource="@KhoDtos" EnablePersistence="true" AllowPaging="true" AllowSorting="true" AllowResizing="true" AllowReordering="true" AllowExcelExport="true" ShowColumnChooser="true" Width="auto">
+            <GridEditSettings AllowAdding="false" AllowEditing="false" AllowDeleting="false"></GridEditSettings>
+            <GridPageSettings PageSizes="true"></GridPageSettings>
+            <GridEvents RowSelected="RowSelectHandler" TValue="KhoDto"></GridEvents>
+            <GridColumns>
+                <GridColumn Field=@nameof(KhoDto.Id) HeaderText="#" Visible="false" ShowInColumnChooser="false" IsPrimaryKey="true" TextAlign="TextAlign.Center" Width="120"></GridColumn>
+                <GridColumn Field=@nameof(KhoDto.KhoUd) HeaderText="Mã kho" TextAlign="TextAlign.Center" Width="120"></GridColumn>
+                <GridColumn Field=@nameof(KhoDto.KhoNm) HeaderText="Tên kho" TextAlign="TextAlign.Center" Width="120"></GridColumn>
+                <GridColumn Field=@nameof(KhoDto.KhoNm2) HeaderText="Tên 2" TextAlign="TextAlign.Center" Width="120"></GridColumn>
+                <GridColumn Field=@nameof(KhoDto.ChiNhanhUd) HeaderText="Chi nhánh" TextAlign="TextAlign.Center" Width="120"></GridColumn>
+            </GridColumns>
+        </SfGrid>
+    </div>
+    <br />
+
+    <!-- Modal Input-->
+    <SfDialog ID="modalCreate" Width="640px" @bind-Visible="ShowModalInput" AllowPrerender="true" IsModal="true">
+        <DialogTemplates>
+            <Header>
+                @if (TrangThaiSuKien == 1)
+                {
+                    <h1 class="modal-title fs-5">
+                        <img src="/images/Button/Moi.png" alt="icon" width="16" height="16">
+                        Thêm mới
+                    </h1>
+                }
+                else if (TrangThaiSuKien == 2)
+                {
+                    <h1 class="modal-title fs-5">
+                        <img src="/images/Button/Sua.png" alt="icon" width="16" height="16">
+                        Chỉnh sửa
+                    </h1>
+                }
+            </Header>
+            <Content>
+                <div class="container">
+                    <EditForm Model="SelectKho" Context="editFormKHO" OnValidSubmit="@SaveModal">
+                        <DataAnnotationsValidator />
+                        <div class="row g-3">
+                            <div class="col-sm-3">
+                                <label for="KhoUd" class="form-label">Mã kho (*)</label>
+                            </div>
+                            <div class="col-sm-3">
+                                <SfTextBox ID="KhoUd" CssClass="e-small" @bind-Value="@(SelectKho.KhoUd)" Enabled="TrangThaiSuKien == 1" @oninput="ConvertToUpperCase"></SfTextBox>
+                            </div>
+                        </div>
+                        <div class="row g-3">
+                            <div class="col-sm-3">
+                                <label for="KhoNm" class="form-label">Tên kho (*)</label>
+                            </div>
+                            <div class="col-sm-9">
+                                <SfTextBox ID="KhoNm" CssClass="e-small" @bind-Value="@(SelectKho.KhoNm)"></SfTextBox>
+                            </div>
+                        </div>
+                        <div class="row g-3">
+                            <div class="col-sm-3">
+                                <label for="KhoNm2" class="form-label">Tên 2</label>
+                            </div>
+                            <div class="col-sm-9">
+                                <SfTextBox ID="KhoNm2" CssClass="e-small" @bind-Value="@(SelectKho.KhoNm2)"></SfTextBox>
+                            </div>
+                        </div>                      
+                        <div class="row g-3">
+                            <div class="col-sm-3">
+                                <label for="ChiNhanh" class="form-label">Chi nhánh</label>
+                            </div>
+                            <div class="col-sm-3">
+                                <SfComboBox @bind-Value="@SelectKho.ChiNhanhId" DataSource="@ChiNhanhDtos" Autofill="true" AllowCustom="false" CssClass="e-multi-column e-small" PopupWidth="auto" PopupHeight="300">
+                                    <ComboBoxEvents TValue="int?" TItem="ChiNhanhDto" ValueChange="cboChiNhanhOnValueChange"></ComboBoxEvents>
+                                    <ComboBoxFieldSettings Text="ChiNhanhUd" Value="Id"></ComboBoxFieldSettings>
+                                    <ComboBoxTemplates TItem="ChiNhanhDto">
+                                        <HeaderTemplate>
+                                            <table class="header-combo">
+                                                <tr>
+                                                    <th>Mã chi nhánh</th>
+                                                    <th>Tên chi nhánh</th>
+                                                    <th>Tên 2</th>
+                                                </tr>
+                                            </table>
+                                        </HeaderTemplate>
+                                        <ItemTemplate Context="itemContext">
+                                            <table>
+                                                <tbody>
+                                                    <tr>
+                                                        <td><span>@((itemContext as ChiNhanhDto).ChiNhanhUd)</span></td>
+                                                        <td><span>@((itemContext as ChiNhanhDto).ChiNhanhNm)</span></td>
+                                                        <td><span>@((itemContext as ChiNhanhDto).ChiNhanhNm2)</span></td>
+                                                    </tr>
+                                                </tbody>
+                                            </table>
+                                        </ItemTemplate>
+                                    </ComboBoxTemplates>
+                                </SfComboBox>
+                            </div>
+                            <div class="col-sm-6">
+                                <SfTextBox ID="ChiNhanhNm" CssClass="e-small" @bind-Value="@(SelectKho.ChiNhanhNm)" Enabled="false"></SfTextBox>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <div style=" border-top: 1px solid #ced4da; margin-top: 10px; width: 100%;"></div><br />
+                            <button type="button" class="btn btn-sm btn-danger" @onclick="CloseModal">Hủy</button>
+                            <button type="button" class="btn btn-sm btn-secondary m-2" @onclick="ResetModal">Làm mới</button>
+                            <button type="submit" class="btn btn-sm btn-primary">Nhận</button>
+                        </div>
+                    </EditForm>
+                </div>
+            </Content>
+        </DialogTemplates>
+    </SfDialog>
+
+    <!--Modal Message-->
+    <SfDialog ID="modalMessage" Width="300px" @bind-Visible="ShowModalMessage" AllowPrerender="true" IsModal="true">
+        <DialogTemplates>
+            <Header>
+                @if (CheckMessage)
+                {
+                    <h1 class="modal-title fs-5 text-success">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" class="bi bi-check-circle-fill" viewBox="0 0 16 16">
+                            <path style="color: forestgreen" d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0m-3.97-3.03a.75.75 0 0 0-1.08.022L7.477 9.417 5.384 7.323a.75.75 0 0 0-1.06 1.06L6.97 11.03a.75.75 0 0 0 1.079-.02l3.992-4.99a.75.75 0 0 0-.01-1.05z" />
+                        </svg>
+                        Thông báo!
+                    </h1>
+                }
+                else
+                {
+                    <h1 class="modal-title fs-5 text-danger">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" class="bi bi-exclamation-triangle-fill" viewBox="0 0 16 16">
+                            <path style="color: orangered" d="M8.982 1.566a1.13 1.13 0 0 0-1.96 0L.165 13.233c-.457.778.091 1.767.98 1.767h13.713c.889 0 1.438-.99.98-1.767zM8 5c.535 0 .954.462.9.995l-.35 3.507a.552.552 0 0 1-1.1 0L7.1 5.995A.905.905 0 0 1 8 5m.002 6a1 1 0 1 1 0 2 1 1 0 0 1 0-2" />
+                        </svg>
+                        Thông báo!
+                    </h1>                  
+                }
+            </Header>
+            <Content>
+                <div class="text-dark">@Message</div>
+            </Content>
+            <FooterTemplate>
+                <div class="modal-footer">
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-sm btn-primary" @onclick="CloseModalMessage">Đóng</button>
+                        @if (CheckMessage)
+                        {
+                            <button type="button" class="btn btn-sm btn-success m-2" @onclick="KiemTra">Kiểm tra</button>
+                        }
+                        @if (TrangThaiSuKien == 3)
+                        {
+                            <button type="button" class="btn btn-sm btn-danger m-2" @onclick="ConfirmDelele">Xóa</button>
+                        }
+                    </div>
+                </div>
+            </FooterTemplate>
+        </DialogTemplates>
+    </SfDialog>
+}
+else
+{
+    <h3>Vui lòng chờ....</h3>
+}
+<style>
+    .e-multi-column.e-ddl.e-popup.e-popup-open td {
+        border: 1px solid rgba(0, 0, 0, 0.125);
+    }
+
+    .header-combo th {
+        color: black;
+        background-color: #FFFF99;
+    }
+
+    .bg-light {
+        background-color: #90AFC5 !important;
+    }
+
+    .e-grid .e-headercell {
+        background-color: #763626;
+        color: ghostwhite;
+        font-size: 1.5rem;
+        font-weight: bold;
+    }
+
+    .e-grid .e-gridcontent .e-rowcell {
+        border: 1px solid rgba(0, 0, 0, 0.125);
+    }
+
+    .e-toolbar-item.e-template > div:first-child {
+        width: 400px !important;
+    }
+
+    .e-checkbox-wrapper .e-frame.e-check, .e-css.e-checkbox-wrapper .e-frame.e-check {
+        color: white;
+    }
+
+    .navEdit {
+        background-color: #202020 !important;
+        border-radius: 20px;
+        padding: 5px 0;
+    }
+
+    #modalCreate {
+        max-height: -webkit-fill-available !important;
+    }
+
+    .e-grid .e-dialog.e-ccdlg {
+        height: auto !important;
+        width: auto !important;
+        top: 0px !important;
+        left: auto !important;
+    }
+</style>
+
+@code {
+    /// <summary>
+    /// biến dùng làm gì ? hỏi lại Quốc
+    /// </summary>
+    private bool hasRefreshed = false;
+    /// <summary>
+    /// biến ghi nhận giá trị tìm kiếm mà người dùng nhập vào textbox
+    /// </summary>
+    private string search = string.Empty;
+    /// <summary>
+    /// biến ghi nhận tình trạng đóng/mở form thêm/sửa
+    /// </summary>
+    private bool ShowModalInput = false;
+    /// <summary>
+    /// biến ghi nhận tình trạng đóng/mở form thông báo
+    /// </summary>
+    private bool ShowModalMessage = false;
+    /// <summary>
+    /// <para>biến ghi nhận tình trạng để thể hiện giao diện thông báo phù hợp</para>
+    /// <para>TRUE là thông báo thành công, FALSE là thông báo thất bại hoặc cảnh báo lỗi</para>
+    /// </summary>
+    private bool CheckMessage = false;
+    /// <summary>
+    /// <para>biến ghi nhận người dùng đang kích hoạt sự kiện nào để xử lý thích hợp</para>
+    /// <para>1. Thêm mới</para>
+    /// <para>2. Chỉnh sửa</para>
+    /// <para>3. Xóa</para>
+    /// </summary>
+    private int TrangThaiSuKien = 1;
+    /// <summary>
+    /// biến ghi nhận nội dung câu thông báo tới người dùng
+    /// </summary>
+    private string Message = string.Empty;
+    /// <summary>
+    /// control GRID thể hiện danh sách dữ liệu
+    /// </summary>
+    private SfGrid<KhoDto> SfGridKHO = new SfGrid<KhoDto>();
+    /// <summary>
+    /// danh sách dữ liệu bảng kho hàng
+    /// </summary>
+    private List<KhoDto> KhoDtos = new List<KhoDto>();
+    /// <summary>
+    /// danh sách dữ liệu bảng chi nhánh
+    /// </summary>
+    private List<ChiNhanhDto> ChiNhanhDtos = new List<ChiNhanhDto>();
+    /// <summary>
+    /// current item
+    /// </summary>
+    private KhoRequest SelectKho = new KhoRequest();
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!hasRefreshed)
+        {
+            // lấy danh sách các danh mục cần làm việc
+            KhoDtos = await _kho.GetListAsync();
+            ChiNhanhDtos = await _chiNhanh.GetListAsync();
+            hasRefreshed = true;
+        }
+    }
+
+    public async void RowSelectHandler(RowSelectEventArgs<KhoDto> args)
+    {
+        // ghi nhận giá trị ID và UD dòng hiện tại, để xử lý trong các sự kiện bên dưới
+        await _localStorage.SetItemAsync("KhoId", args.Data.Id);
+        await _localStorage.SetItemAsync("KhoUd", args.Data.KhoUd);
+    }
+
+    /***** LIST FORM EVENT *****/
+
+    /// <summary>
+    /// nhấn nút thêm mới
+    /// </summary>
+    public async void CreateAsync()
+    {
+        try
+        {
+            SelectKho = new KhoRequest();
+            // ngầm định mã chi nhánh đầu tiên trong danh sách
+            var chiNhanh = await _chiNhanh.FirstOrDefaultAsync();
+            if (chiNhanh != null)
+            {
+                SelectKho = new KhoRequest()
+                    {
+                        ChiNhanhId = chiNhanh.Id,
+                        ChiNhanhUd = chiNhanh.ChiNhanhUd,
+                        ChiNhanhNm = chiNhanh.ChiNhanhNm
+                    };
+            }
+            // lấy thông tin item hiện tại để ngầm định dữ liệu cho item mới (nếu có)
+            var khoId = await _localStorage.GetItemAsync<string>("KhoId"); // lấy ID của current item
+            if (khoId != null)
+            {
+                var kho = await _kho.GetByIdAsync(Int32.Parse(khoId)); // tìm trong cơ sở dữ liệu
+                if (kho != null)
+                {
+                    SelectKho = new KhoRequest()
+                        {
+                            KhoNm = kho.KhoNm,
+                            KhoNm2 = kho.KhoNm2,
+                            ChiNhanhId = kho.ChiNhanhId,
+                            ChiNhanhUd = kho.ChiNhanhUd,
+                            ChiNhanhNm = kho.ChiNhanhNm
+                        };
+                }
+            }
+            // tình trạng thêm mới
+            TrangThaiSuKien = 1;
+            // mở form input
+            ShowModalInput = true;
+        }
+        catch
+        {
+            // phát thông báo lỗi ngoại lệ
+            CheckMessage = false;
+            Message = "Lỗi! Vui lòng liên hệ bộ phận kỹ thuật để được hỗ trợ.";
+            ShowModalMessage = true;
+        }
+
+        StateHasChanged();
+    }
+
+    /// <summary>
+    /// nhấn nút chỉnh sửa
+    /// </summary>
+    public async void EditAsync()
+    {
+        try
+        {
+            // lấy thông tin cần chỉnh sửa
+            SelectKho = new KhoRequest();
+            var khoId = await _localStorage.GetItemAsync<string>("KhoId"); // lấy ID của current item
+            var kho = await _kho.GetByIdAsync(Int32.Parse(khoId)); // tìm trong cơ sở dữ liệu           
+            SelectKho = ObjectMapper.Map<KhoDto, KhoRequest>(kho); // mapping
+
+            // tình trạng chỉnh sửa
+            TrangThaiSuKien = 2;
+            // mở form input
+            ShowModalInput = true;
+        }
+        catch (Exception)
+        {
+            // phát thông báo lỗi
+            CheckMessage = false;
+            Message = "Bạn chưa chọn dòng cần chỉnh sửa.";
+            ShowModalMessage = true;
+        }
+
+        StateHasChanged();
+    }
+
+    /// <summary>
+    /// nhấn nút xóa
+    /// </summary>
+    public async void DeleteAsync()
+    {
+        var KhoUd = await _localStorage.GetItemAsync<string>("KhoUd"); // lấy UD của current item
+        if (KhoUd != null)
+        {
+            // tình trạng xóa
+            TrangThaiSuKien = 3;
+            // phát thông báo xác nhận làm tiếp
+            CheckMessage = false;
+            Message = $"Xác nhận muốn xóa kho mã {KhoUd} ?";
+            ShowModalMessage = true;
+        }
+        else
+        {
+            // phát thông báo lỗi
+            CheckMessage = false;
+            Message = "Bạn chưa chọn dòng cần xóa.";
+            ShowModalMessage = true;
+        }
+
+        StateHasChanged();
+    }    
+
+    /// <summary>
+    /// nhấn nút kết xuất excel
+    /// </summary>
+    public async void ExportToExcelAsync()
+    {
+        ExcelExportProperties ExcelProperties = new ExcelExportProperties();
+        ExcelProperties.FileName = "Kho.xlsx";
+        await this.SfGridKHO.ExportToExcelAsync(ExcelProperties);
+    }    
+
+    /// <summary>
+    /// nhấn nút ẩn/hiện cột trên grid
+    /// </summary>
+    public async void ShowColumn()
+    {
+        await this.SfGridKHO.OpenColumnChooserAsync();
+    }
+
+    /// <summary>
+    /// nhấn nút tải lại dữ liệu
+    /// </summary>
+    public async void Refresh()
+    {
+        await this.SfGridKHO.SearchAsync(string.Empty);
+        KhoDtos = await _kho.GetListAsync();
+        StateHasChanged();
+    }
+
+    /// <summary>
+    /// nhấn nút tìm kiếm, theo điều kiện lọc trong searchbox
+    /// </summary>
+    public async void Search()
+    {
+        await this.SfGridKHO.SearchAsync(search);
+    }
+
+    /***** ITEM FORM EVENT *****/
+
+    /// <summary>
+    /// sự kiện chọn giá trị trên combobox ChiNhanh
+    /// </summary>
+    private void cboChiNhanhOnValueChange(ChangeEventArgs<int?, ChiNhanhDto> args)
+    {
+        SelectKho.ChiNhanhNm = "";
+        if (args.ItemData != null)
+        {
+            SelectKho.ChiNhanhNm = args.ItemData.ChiNhanhNm;
+        }
+    }
+
+    /// <summary>
+    /// đóng form nhập liệu
+    /// </summary>
+    private void CloseModal()
+    {
+        ShowModalInput = false;
+    }
+
+    /// <summary>
+    /// xóa dữ liệu nhập lại
+    /// </summary>
+    private async void ResetModal()
+    {
+        if (TrangThaiSuKien == 1)
+        {
+            SelectKho = new KhoRequest();
+        }
+        else
+        {
+            var KhoUd = await _localStorage.GetItemAsync<string>("KhoUd");
+            SelectKho = new KhoRequest()
+                {
+                    KhoUd = KhoUd
+                };
+        }
+
+        StateHasChanged();
+    }
+
+    /// <summary>
+    /// lưu dữ liệu thay đổi (nếu có)
+    /// </summary>
+    private async void SaveModal()
+    {
+        try
+        {
+            if (TrangThaiSuKien == 1)
+            {
+                var result = await _kho.CreateAsync(SelectKho); // gọi service thêm mới
+                if (result.IsSuccessed)
+                {
+                    KhoDtos = await _kho.GetListAsync();
+                    // phát thông báo thành công
+                    CheckMessage = true;
+                    Message = result.Message;
+                    ShowModalMessage = true;
+                    // đóng form nhập liệu
+                    ShowModalInput = false;
+                }
+                else
+                {
+                    // phát thông báo lỗi
+                    CheckMessage = false;
+                    Message = result.Message;
+                    ShowModalMessage = true;
+                }
+            }
+            else
+            {
+                var khoId = await _localStorage.GetItemAsync<string>("KhoId"); // lấy ID của current item
+                var result = await _kho.UpdateAsync(Int32.Parse(khoId), SelectKho); // gọi service chỉnh sửa
+                if (result.IsSuccessed)
+                {
+                    KhoDtos = await _kho.GetListAsync();
+                    // phát thông báo thành công
+                    CheckMessage = true;
+                    ShowModalMessage = true;
+                    Message = result.Message;
+                    // đóng form nhập liệu
+                    ShowModalInput = false;
+                }
+                else
+                {
+                    // phát thông báo lỗi
+                    CheckMessage = false;
+                    Message = result.Message;
+                    ShowModalMessage = true;
+                }
+            }
+        }
+        catch
+        {
+            // phát thông báo lỗi ngoại lệ
+            CheckMessage = false;
+            Message = "Lỗi! Vui lòng liên hệ bộ phận kỹ thuật để được hỗ trợ.";
+            ShowModalMessage = true;
+        }
+
+        StateHasChanged();
+    }
+
+    /// <summary>
+    /// đóng form thông báo
+    /// </summary>
+    private void CloseModalMessage()
+    {
+        ShowModalMessage = false;
+    }
+
+    /// <summary>
+    /// focus tới record vừa tạo
+    /// </summary>
+    private async void KiemTra()
+    {
+        await this.SfGridKHO.SearchAsync(SelectKho.KhoUd);
+        ShowModalMessage = false;
+        StateHasChanged();
+    }
+
+    /// <summary>
+    /// xác nhận có xóa dữ liệu và thực hiện
+    /// </summary>
+    private async void ConfirmDelele()
+    {
+        var khoId = await _localStorage.GetItemAsync<string>("KhoId"); // lấy ID của current item
+        var result = await _kho.DeleteAsync(Int32.Parse(khoId)); // gọi service xóa
+        if (result.IsSuccessed)
+        {
+            // xóa current item khỏi vùng nhớ (?)
+            await _localStorage.RemoveItemAsync("KhoId");
+            await _localStorage.RemoveItemAsync("KhoUd");
+            // tải lại dữ liệu
+            KhoDtos = await _kho.GetListAsync();
+            ShowModalMessage = false;
+        }
+        else
+        {
+            // phát thông báo lỗi
+            CheckMessage = false;
+            Message = result.Message;
+            ShowModalMessage = true;
+        }
+
+        StateHasChanged();
+    }
+
+    /***** MISC *****/
+
+    private void ConvertToUpperCase(Microsoft.AspNetCore.Components.ChangeEventArgs args)
+    {
+        if (args.Value != null)
+        {
+            var text = args.Value.ToString();
+            if (text != null)
+                SelectKho.KhoUd = text.ToUpper();
+        }
+    }
+}

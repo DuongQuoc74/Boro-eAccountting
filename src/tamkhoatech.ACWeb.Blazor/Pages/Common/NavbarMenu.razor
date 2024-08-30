@@ -1,0 +1,286 @@
+﻿<nav class="navbar navbar-expand-lg bg-body-tertiary navbarMenu">
+    <div class="container-fluid">
+        @if(IsAdd){
+            <div class="navbar-brand">
+                <SfTooltip ID="navbarMenu-add" Target="#target" Content=@Add Position="Position.RightTop" OpensOn="Hover">
+                    <button id="target" type="button" class="btn navbarMenu-item" @onclick="AddAsync">
+                        <img src="/images/Button/Moi.png" alt="icon" width="16" height="16">
+                        Mới
+                    </button>
+                </SfTooltip>
+            </div>
+        }
+        @if (IsEdit)
+        {
+            <div class="navbar-brand">
+                <SfTooltip ID="navbarMenu-edit" Target="#target" Content=@Edit Position="Position.RightTop" OpensOn="Hover">
+                    <button id="target" type="button" class="btn navbarMenu-item" @onclick="EditAsync">
+                        <img src="/images/Button/Sua.png" alt="icon" width="16" height="16">
+                        Sửa
+                    </button>
+                </SfTooltip>
+            </div>
+        }
+        @if (IsDelete)
+        {
+            <div class="navbar-brand">
+                <SfTooltip ID="navbarMenu-delete" Target="#target" Content=@Delete Position="Position.RightTop" OpensOn="Hover">
+                    <button id="target" type="button" class="btn navbarMenu-item" @onclick="DeleteAsync">
+                        <img src="/images/Button/Xoa.png" alt="icon" width="16" height="16">
+                        Xóa
+                    </button>
+                </SfTooltip>
+            </div>
+        }
+        @if (IsMerged)
+        {
+            <div class="navbar-brand">
+                <SfTooltip ID="navbarMenu-merged" Target="#target" Content=@Merged Position="Position.RightTop" OpensOn="Hover">
+                    <button id="target" type="button" class="btn navbarMenu-item" @onclick="MergedAsync">
+                        <img src="/images/Button/GopMa.png" alt="icon" width="16" height="16">
+                        Gộp
+                    </button>
+                </SfTooltip>
+            </div>
+        }
+        @if (IsPrint)
+        {
+            <div class="navbar-brand">
+                <SfTooltip ID="navbarMenu-in" Target="#target" Content=@Print Position="Position.RightTop" OpensOn="Hover">
+                    <button id="target" type="button" class="btn navbarMenu-item" @onclick="PrintAsync">
+                        <img src="/images/Button/Print.png" alt="icon" width="16" height="16">
+                        In
+                    </button>
+                </SfTooltip>
+            </div>
+        }
+        @if (IsExcel)
+        {
+            <div class="navbar-brand">
+                <SfTooltip ID="navbarMenu-exportExcel" Target="#target" Content=@Excel Position="Position.RightTop" OpensOn="Hover">
+                    <button id="target" type="button" class="btn navbarMenu-item" @onclick="ExcelAsync">
+                        <img src="/images/Button/xls25.png" alt="icon" width="16" height="16">
+                        Excel
+                    </button>
+                </SfTooltip>
+            </div>
+        }
+        @if (IsTao)
+        {
+            <div class="navbar-brand">
+                <SfTooltip ID="navbarMenu-exportExcel" Target="#target" Content=@Tao Position="Position.RightTop" OpensOn="Hover">
+                    <button id="target" type="button" class="btn navbarMenu-item" @onclick="TaoAsync">
+                        <img src="/images/Button/nut_tao1.png" alt="icon" width="16" height="16">
+                        Tạo
+                    </button>
+                </SfTooltip>
+            </div>
+        }
+        @if (IsShowColumn)
+        {
+            <div class="navbar-brand">
+                <SfTooltip ID="navbarMenu-showColumn" Target="#target" Content=@ShowColumn Position="Position.RightTop" OpensOn="Hover">
+                    <button id="target" type="button" class="btn navbarMenu-item" @onclick="ShowColumnAsync">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-body-text" viewBox="0 0 16 16">
+                            <path fill-rule="evenodd" d="M0 .5A.5.5 0 0 1 .5 0h4a.5.5 0 0 1 0 1h-4A.5.5 0 0 1 0 .5m0 2A.5.5 0 0 1 .5 2h7a.5.5 0 0 1 0 1h-7a.5.5 0 0 1-.5-.5m9 0a.5.5 0 0 1 .5-.5h5a.5.5 0 0 1 0 1h-5a.5.5 0 0 1-.5-.5m-9 2A.5.5 0 0 1 .5 4h3a.5.5 0 0 1 0 1h-3a.5.5 0 0 1-.5-.5m5 0a.5.5 0 0 1 .5-.5h5a.5.5 0 0 1 0 1h-5a.5.5 0 0 1-.5-.5m7 0a.5.5 0 0 1 .5-.5h3a.5.5 0 0 1 0 1h-3a.5.5 0 0 1-.5-.5m-12 2A.5.5 0 0 1 .5 6h6a.5.5 0 0 1 0 1h-6a.5.5 0 0 1-.5-.5m8 0a.5.5 0 0 1 .5-.5h5a.5.5 0 0 1 0 1h-5a.5.5 0 0 1-.5-.5m-8 2A.5.5 0 0 1 .5 8h5a.5.5 0 0 1 0 1h-5a.5.5 0 0 1-.5-.5m7 0a.5.5 0 0 1 .5-.5h7a.5.5 0 0 1 0 1h-7a.5.5 0 0 1-.5-.5m-7 2a.5.5 0 0 1 .5-.5h8a.5.5 0 0 1 0 1h-8a.5.5 0 0 1-.5-.5m0 2a.5.5 0 0 1 .5-.5h4a.5.5 0 0 1 0 1h-4a.5.5 0 0 1-.5-.5m0 2a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 0 1h-2a.5.5 0 0 1-.5-.5" />
+                        </svg>
+                        Ẩn cột
+                    </button>
+                </SfTooltip>
+            </div>
+        }
+        @if (IsRefresh)
+        {
+            <div class="navbar-brand">
+                <SfTooltip ID="navbarMenu-refresh" Target="#target" Content=@Refresh Position="Position.RightTop" OpensOn="Hover">
+                    <button id="target" class="btn navbarMenu-item" @onclick="RefreshAsync">
+                        <img src="/images/Button/Refesh.png" alt="icon" width="16" height="16">
+                    </button>
+                </SfTooltip>
+            </div>
+        }
+        @if (IsChuyenTab)
+        {
+            <div class="navbar-brand">
+                <SfTooltip ID="navbarMenu-refresh" Target="#target" Content=@ChuyenTab Position="Position.RightTop" OpensOn="Hover">
+                    <button id="target" class="btn navbarMenu-item" @onclick="ChuyenTabAsync">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-forward-fill" viewBox="0 0 16 16">
+                            <path d="m9.77 12.11 4.012-2.953a.647.647 0 0 0 0-1.114L9.771 5.09a.644.644 0 0 0-.971.557V6.65H2v3.9h6.8v1.003c0 .505.545.808.97.557" />
+                        </svg>
+                    </button>
+                </SfTooltip>
+            </div>
+        }
+        <div class="d-flex ms-auto" role="search">
+            @if (IsSearch)
+            {
+                <div class="flex-grow-1">
+                    <input id="navbar-search" class="form-control" @bind-value="@InputSearch" placeholder="Nhập để tìm kiếm..." aria-label="Search">
+                </div>
+                <SfTooltip ID="navbarMenu-search" Target="#target" Content=@Search Position="Position.RightTop" OpensOn="Hover">
+                    <button id="target" style="margin: 0px 0px 0px 8px;" class="btn navbarMenu-item" @onclick="SearchAsync">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-search" viewBox="0 0 16 16">
+                            <path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001q.044.06.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1 1 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0" />
+                        </svg>
+                    </button>
+                </SfTooltip>
+            }
+            <SfTooltip ID="navbarMenu-help" Target="#target" Content=@Help Position="Position.TopLeft" OpensOn="Hover">
+                <a id="target" style="margin: 0px 16px 0px 8px;" type="button" class="btn navbarMenu-item" href="@HelpUrl" target="_blank">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-question-circle" viewBox="0 0 16 16">
+                        <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14m0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16" />
+                        <path d="M5.255 5.786a.237.237 0 0 0 .241.247h.825c.138 0 .248-.113.266-.25.09-.656.54-1.134 1.342-1.134.686 0 1.314.343 1.314 1.168 0 .635-.374.927-.965 1.371-.673.489-1.206 1.06-1.168 1.987l.003.217a.25.25 0 0 0 .25.246h.811a.25.25 0 0 0 .25-.25v-.105c0-.718.273-.927 1.01-1.486.609-.463 1.244-.977 1.244-2.056 0-1.511-1.276-2.241-2.673-2.241-1.267 0-2.655.59-2.75 2.286m1.557 5.763c0 .533.425.927 1.01.927.609 0 1.028-.394 1.028-.927 0-.552-.42-.94-1.029-.94-.584 0-1.009.388-1.009.94" />
+                    </svg>
+                </a>
+            </SfTooltip>
+        </div>
+
+    </div>
+</nav>
+
+@code {
+    [Parameter]
+    public string Content { set; get; } = string.Empty;
+
+    private string? Add { set; get; }
+    [Parameter]
+    public bool IsAdd { set; get; } = false;
+    [Parameter]
+    public EventCallback OnValidSubmitAdd { get; set; }
+
+    private string? Edit { set; get; }
+    [Parameter]
+    public bool IsEdit { set; get; } = false;
+    [Parameter]
+    public EventCallback OnValidSubmitEdit { get; set; }
+
+    private string? Delete { set; get; }
+    [Parameter]
+    public bool IsDelete { set; get; } = false;
+    [Parameter]
+    public EventCallback OnValidSubmitDelete { get; set; }
+
+    private string? Merged { set; get; }
+    [Parameter]
+    public bool IsMerged { set; get; } = false;
+    [Parameter]
+    public EventCallback OnValidSubmitMerged { get; set; }
+
+    private string? Print { set; get; }
+    [Parameter]
+    public bool IsPrint { set; get; } = false;
+    [Parameter]
+    public EventCallback OnValidSubmitPrint { get; set; }
+
+    private string? Excel { set; get; }
+    [Parameter]
+    public bool IsExcel { set; get; } = false;
+    [Parameter]
+    public EventCallback OnValidSubmitExcel { get; set; }
+
+    private string? Tao { set; get; }
+    [Parameter]
+    public bool IsTao { set; get; } = false;
+    [Parameter]
+    public EventCallback OnValidSubmitTao { get; set; }
+
+    private string? ShowColumn { set; get; }
+    [Parameter]
+    public bool IsShowColumn { set; get; } = false;
+    [Parameter]
+    public EventCallback OnValidSubmitShowColumn { get; set; }
+
+    private string? Refresh { set; get; }
+    [Parameter]
+    public bool IsRefresh { set; get; } = false;
+    [Parameter]
+    public EventCallback OnValidSubmitRefresh { get; set; }
+
+    private string? ChuyenTab { set; get; }
+    [Parameter]
+    public bool IsChuyenTab { set; get; } = false;
+    [Parameter]
+    public EventCallback OnValidSubmitChuyenTab { get; set; }
+
+    private string? InputSearch { set; get; }
+    private string? Search { set; get; }
+    [Parameter]
+    public bool IsSearch { set; get; } = false;
+    [Parameter]
+    public EventCallback<string> OnValidSubmitSearch { get; set; }
+
+    [Parameter]
+    public string? HelpUrl { set; get; }
+    public string? Help { set; get; }
+
+    protected override void OnInitialized()
+    {
+        var taoChi = new List<string>() { "phiếu nhập mua hàng", "phiếu nhập khẩu", "hóa đơn mua hàng" };
+        if (taoChi.Contains(Content))
+        {
+            Tao = "Tạo chi";
+        }
+        else
+        {
+            Tao = "Tạo thu";
+        }
+        Add = "Tạo " + Content;
+        Edit = "Sửa " + Content;
+        Delete = "Xóa " + Content;
+        Merged = "Gộp " + Content;
+        Print = "In " + Content;
+        Excel = "Xuất excel " + Content;
+        ShowColumn = "Ẩn hoặc hiện cột";
+        Refresh = "Làm mới";
+        ChuyenTab = "Chuyển tab";
+        Search = "Tìm kiếm";
+        Help = "Hướng dẫn";
+    }
+
+    private async Task AddAsync()
+    {
+        await OnValidSubmitAdd.InvokeAsync();
+    }
+    private async Task EditAsync()
+    {
+        await OnValidSubmitEdit.InvokeAsync();
+    }
+    private async Task DeleteAsync()
+    {
+        await OnValidSubmitDelete.InvokeAsync();
+    }
+    private async Task MergedAsync()
+    {
+        await OnValidSubmitMerged.InvokeAsync();
+    }
+    private async Task PrintAsync()
+    {
+        await OnValidSubmitPrint.InvokeAsync();
+    }
+    private async Task ExcelAsync()
+    {
+        await OnValidSubmitExcel.InvokeAsync();
+    }
+    private async Task TaoAsync()
+    {
+        await OnValidSubmitTao.InvokeAsync();
+    }
+    private async Task ShowColumnAsync()
+    {
+        await OnValidSubmitShowColumn.InvokeAsync();
+    }
+
+    private async Task RefreshAsync()
+    {
+        await OnValidSubmitRefresh.InvokeAsync();
+    }
+
+    private async Task ChuyenTabAsync()
+    {
+        await OnValidSubmitChuyenTab.InvokeAsync();
+    }
+    private async Task SearchAsync()
+    {
+        await OnValidSubmitSearch.InvokeAsync(InputSearch);
+    }
+}

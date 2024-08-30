@@ -1,0 +1,54 @@
+﻿@media (min-width: 576px) {
+    .vertical-line {
+        border-right: 2px solid #0051ff38;
+    }
+    .row-line {
+        border-top: 1px solid #0051ff6b;
+        margin: 10px 0px;
+        width: 100%;
+    }
+    .container {
+        max-width: none;
+    }
+}
+/*@media (max-width: 1366px) {
+    .form-label {
+        font-size: 12px;
+    }
+}*/
+body, .e-control, .e-headertext, .e-tab .e-tab-header .e-toolbar-item .e-tab-text {
+    font-family: "Roboto", sans-serif;
+}
+.e-tooltip-wrap .e-tip-content {
+    color: white;
+    font-size: 12px;
+    line-height: 20px;
+    font-family: "Roboto", sans-serif;
+}
+.button-edit {
+    --bs-btn-padding-y: .25rem;
+    --bs-btn-padding-x: .5rem;
+    --bs-btn-font-size: .75rem;
+}
+/* Chọn thanh trượt khi xuất hiện */
+::-webkit-scrollbar {
+    width: 0px; /* Chiều rộng của thanh trượt */
+    border-top: 2px solid #3273dc94;
+    height: 8px !important;
+}
+
+/* Chọn thanh trượt theo trục dọc */
+::-webkit-scrollbar-thumb {
+    background-color: #d1e4eb; /* Màu nền của thanh trượt */
+    border-radius: 8px; /* Bo tròn các góc của thanh trượt */
+    border-top: 2px solid #5ca7bf;
+}
+::-webkit-scrollbar-thumb:hover {
+    cursor: pointer;
+}
+::-webkit-scrollbar-thumb:active {
+    cursor: pointer;
+}
+.display-none{
+    display:none !important;
+}

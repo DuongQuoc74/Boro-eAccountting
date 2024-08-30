@@ -1,0 +1,808 @@
+﻿@page "/dudaukytaikhoan"
+@using Blazored.LocalStorage
+@using Syncfusion.Blazor.Data
+@using Volo.Abp.ObjectMapping
+@using tamkhoatech.ACWeb.Blazor.Pages.Common
+@using tamkhoatech.ACWeb.DTO.QuanLyHeThong.CapNhatSoDuDauKy
+@using tamkhoatech.ACWeb.DTO.QuanLyHeThong.CapNhatSoDuDauKy.DuDauKyTk
+@using tamkhoatech.ACWeb.Dto
+@using tamkhoatech.ACWeb.IService
+@using tamkhoatech.ACWeb.IService.IQuanLyHeThong
+
+@inject IJSRuntime _jsRuntime
+@inject ILocalStorageService _localStorage
+@inject IObjectMapper _objectMapper
+@inject IChiNhanhService _chiNhanh
+@inject IThamSoHeThongService _thamSo
+@inject IDuDauKyTkService _duDauKyTk
+@inject ITaiKhoanService _taiKhoan
+
+<link rel="stylesheet" href="/Css/danh-sach-phieu.css">
+@if (hasRefreshed)
+{
+    <SfDialog ID="duDauKyTk" Width="520px" @bind-Visible="IsShowModal" AllowPrerender="true" IsModal="true">
+        <DialogTemplates>
+            <Header>
+                <h1 class="thoiGianLamViec-title">
+                    <img src="/images/TreeView/tamkhoa.ico" alt="icon" width="20" height="20">
+                    <span style="text-align: center">
+                        Cập nhật số dư đầu kỳ tài khoản
+                    </span>
+                </h1>
+            </Header>
+            <Content>
+                <EditForm Model="SelectDauKy" Context="firstForm" OnValidSubmit="@ConfirmSelectAsync">
+                    <DataAnnotationsValidator />
+                    <div class="mb-1">
+                        <div class="row">
+                            <div class="col-sm-3">
+                                <label for="ChiNhanhId" class="form-label">Mã chi nhánh <span class="text-danger">*</span></label>
+                            </div>
+                            <div class="col-sm-3">
+                                <SfComboBox @ref="ddCN" @bind-Value="@SelectDauKy.ChiNhanhId" DataSource="@ChiNhanhDtos" AllowFiltering="true" Autofill="true" AllowCustom="false" CssClass="e-multi-column e-small" PopupWidth="700" PopupHeight="300">
+                                    <ComboBoxEvents TValue="int?" TItem="ChiNhanhDto" Filtering="OnFilteringChiNhanh" ValueChange="OnValueChangeChiNhanh"></ComboBoxEvents>
+                                    <ComboBoxFieldSettings Value="Id" Text="ChiNhanhUd" />
+                                    <ComboBoxTemplates TItem="ChiNhanhDto">
+                                        <HeaderTemplate>
+                                            <table class="header-combo">
+                                                <thead>
+                                                    <tr>
+                                                        <th style="width:150px">Mã chi nhánh</th>
+                                                        <th>Tên chi nhánh</th>
+                                                        <th>Tên 2</th>
+                                                    </tr>
+                                                </thead>
+                                            </table>
+                                        </HeaderTemplate>
+                                        <ItemTemplate Context="itemContext">
+                                            <table>
+                                                <tbody>
+                                                    <tr>
+                                                        <td style="width:150px"><span>@((itemContext as ChiNhanhDto).ChiNhanhUd)</span></td>
+                                                        <td><span>@((itemContext as ChiNhanhDto).ChiNhanhNm)</span></td>
+                                                        <td><span>@((itemContext as ChiNhanhDto).ChiNhanhNm2)</span></td>
+                                                    </tr>
+                                                </tbody>
+                                            </table>
+                                        </ItemTemplate>
+                                    </ComboBoxTemplates>
+                                </SfComboBox>
+                            </div>
+                            <div class="col-sm-6">
+                                <SfTextBox ID="ChiNhanhNm" CssClass="e-small" @bind-Value="@(SelectDauKy.ChiNhanhNm)" Enabled="false"></SfTextBox>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mb-1">
+                        <div class="row">
+                            <div class="col-sm-3">
+                                <label for="Ngay" class="form-label">Ngày hạch toán:</label>
+                            </div>
+                            <div class="col-sm-3">
+                                <SfTextBox ID="Ngay" CssClass="e-small" Value="@SelectDauKy.Ngay.ToString("dd/MM/yyyy")" Enabled="false"></SfTextBox>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mb-1">
+                        <div style="color: red" class="row">
+                            <h6>Lưu ý:</h6>
+                            <br/> <p> - Đối với các tài khoản theo dõi công nợ thì phải vào số liệu công nợ chi tiết ở phần cập nhật số dư công nợ.</p>
+                            <br/> <p> - Nếu số dư đầu kỳ không phải là của tháng một thì phải vào thêm số dư đầu năm để có thể lên được bảng cân đối kế toán.</p>
+                        </div>
+                    </div>
+                    <div class="row-line"></div>
+                    <div style="margin: 0px -8px" class="modal-footer">
+                        <button type="submit" class="btn btn-sm btn-primary">Nhận</button>
+                    </div>
+                </EditForm>
+            </Content>
+        </DialogTemplates>
+    </SfDialog>
+    <div @onkeyup="@OnKeyUp">
+        <div class="row gy-2 gx-3 align-items-center">
+            <div class="col-auto">
+                <h4>
+                    <label>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="25" height="25" fill="currentColor" class="bi bi-database-fill-add" viewBox="0 0 16 16">
+                            <path d="M12.5 16a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7m.5-5v1h1a.5.5 0 0 1 0 1h-1v1a.5.5 0 0 1-1 0v-1h-1a.5.5 0 0 1 0-1h1v-1a.5.5 0 0 1 1 0M8 1c-1.573 0-3.022.289-4.096.777C2.875 2.245 2 2.993 2 4s.875 1.755 1.904 2.223C4.978 6.711 6.427 7 8 7s3.022-.289 4.096-.777C13.125 5.755 14 5.007 14 4s-.875-1.755-1.904-2.223C11.022 1.289 9.573 1 8 1" />
+                            <path d="M2 7v-.839c.457.432 1.004.751 1.49.972C4.722 7.693 6.318 8 8 8s3.278-.307 4.51-.867c.486-.22 1.033-.54 1.49-.972V7c0 .424-.155.802-.411 1.133a4.51 4.51 0 0 0-4.815 1.843A12 12 0 0 1 8 10c-1.573 0-3.022-.289-4.096-.777C2.875 8.755 2 8.007 2 7m6.257 3.998L8 11c-1.682 0-3.278-.307-4.51-.867-.486-.22-1.033-.54-1.49-.972V10c0 1.007.875 1.755 1.904 2.223C4.978 12.711 6.427 13 8 13h.027a4.55 4.55 0 0 1 .23-2.002m-.002 3L8 14c-1.682 0-3.278-.307-4.51-.867-.486-.22-1.033-.54-1.49-.972V13c0 1.007.875 1.755 1.904 2.223C4.978 15.711 6.427 16 8 16c.536 0 1.058-.034 1.555-.097a4.5 4.5 0 0 1-1.3-1.905" />
+                        </svg>
+                        <strong>Cập nhật số dư đầu kỳ tài khoản</strong>
+                    </label>
+                </h4>
+            </div>
+        </div>
+        <div class="thong-ke">
+            <span><b>F10</b>: Tổng cộng <strong>|</strong> <b>F3</b>: Sửa <strong>|</strong><b>F8</b>: Xóa <strong>|</strong> <b>F9</b>: Xuất excel </span>
+        </div>
+        <div class="row g-3">
+            <NavbarMenu Content="@ContentNavbarMenu"
+                        IsEdit="true" OnValidSubmitEdit="@EditAsync"
+                        IsDelete="true" OnValidSubmitDelete="@DeleteAsync"
+                        IsRefresh="true" OnValidSubmitRefresh="@RefreshAsync"
+                        IsExcel="true" OnValidSubmitExcel="@ExportToExcelAsync"
+                        IsSearch="true" OnValidSubmitSearch="@SearchAsync"
+                        HelpUrl=@HelpUrl />
+        </div>
+        <br />
+        <div class="row g-3">
+            <SfGrid ID="gridDuDauKyTk" @ref="SfGrid" DataSource="@DuDauKyTkDtos" EnablePersistence="true" AllowExcelExport="true" AllowSelection="true" AllowPaging="true" AllowSorting="true" AllowResizing="true" AllowReordering="true" ShowColumnChooser="true" Width="auto" Height="360">
+                <GridSelectionSettings CheckboxMode="CheckboxSelectionType.ResetOnRowClick" Type="Syncfusion.Blazor.Grids.SelectionType.Single"></GridSelectionSettings>
+                <GridEditSettings AllowAdding="false" AllowEditing="false" AllowDeleting="false"></GridEditSettings>
+                <GridPageSettings PageSize="10"></GridPageSettings>
+                <GridEvents OnRecordDoubleClick="RecordDoubleClickHandler" TValue="DuDauKyTkDto"></GridEvents>
+                <GridColumns>
+                    <GridColumn Type="ColumnType.CheckBox" TextAlign="TextAlign.Center" Width="50"></GridColumn>
+                    <GridColumn Field=@nameof(DuDauKyTkDto.Id) HeaderText="#" IsPrimaryKey="true" Visible="false" ShowInColumnChooser="false" TextAlign="TextAlign.Center" Width="120"></GridColumn>
+                    <GridColumn Field=@nameof(DuDauKyTkDto.TaiKhoanUd) HeaderText="Tài khoản" ShowInColumnChooser="false" TextAlign="TextAlign.Left" Width="150"></GridColumn>
+                    <GridColumn Field=@nameof(DuDauKyTkDto.TaiKhoanNm) HeaderText="Tên tài khoản" TextAlign="TextAlign.Left" Width="300"></GridColumn>
+                    <GridColumn Field=@nameof(DuDauKyTkDto.DuNoDauKy) HeaderText="Dư nợ đầu kỳ ngoại tệ" TextAlign="TextAlign.Right" Width="150"></GridColumn>
+                    <GridColumn Field=@nameof(DuDauKyTkDto.DuCoDauKy) HeaderText="Dư có đầu kỳ ngoại tệ" TextAlign="TextAlign.Right" Width="150"></GridColumn>
+                    <GridColumn Field=@nameof(DuDauKyTkDto.DuNoDauKyVND) HeaderText="Dư nợ đầu kỳ" TextAlign="TextAlign.Right" Width="150"></GridColumn>
+                    <GridColumn Field=@nameof(DuDauKyTkDto.DuCoDauKyVND) HeaderText="Dư có đầu kỳ" TextAlign="TextAlign.Right" Width="150"></GridColumn>
+                    <GridColumn Field=@nameof(DuDauKyTkDto.DuNoDauNam) HeaderText="Dư nợ đầu năm ngoại tệ" TextAlign="TextAlign.Right" Width="150"></GridColumn>
+                    <GridColumn Field=@nameof(DuDauKyTkDto.DuCoDauNam) HeaderText="Dư có đầu năm ngoại tệ" TextAlign="TextAlign.Right" Width="150"></GridColumn>
+                    <GridColumn Field=@nameof(DuDauKyTkDto.DuNoDauNamVND) HeaderText="Dư nợ đầu năm" TextAlign="TextAlign.Right" Width="150"></GridColumn>
+                    <GridColumn Field=@nameof(DuDauKyTkDto.DuCoDauNamVND) HeaderText="Dư có đầu năm" TextAlign="TextAlign.Right" Width="150"></GridColumn>
+                </GridColumns>
+                <GridAggregates>
+                    <GridAggregate>
+                        <GridAggregateColumns>
+                            <GridAggregateColumn Field="@nameof(DuDauKyTkDto.TaiKhoanUd)" Type="AggregateType.Sum" Format="N0">
+                                <FooterTemplate>
+                                    @{
+                                        var SumValue = (context as AggregateTemplateContext);
+                                        <div style="color:black">
+                                            Tổng cổng:
+                                        </div>
+                                    }
+                                </FooterTemplate>
+                            </GridAggregateColumn>
+                            <GridAggregateColumn Field="@nameof(DuDauKyTkDto.DuNoDauKy)" Type="AggregateType.Sum" Format="N4">
+                                <FooterTemplate>
+                                    @{
+                                        var SumValue = (context as AggregateTemplateContext);
+                                        <div style="color:black">
+                                            @SumValue?.Sum
+                                        </div>
+                                    }
+                                </FooterTemplate>
+                            </GridAggregateColumn>
+                            <GridAggregateColumn Field="@nameof(DuDauKyTkDto.DuCoDauKy)" Type="AggregateType.Sum" Format="N4">
+                                <FooterTemplate>
+                                    @{
+                                        var SumValue = (context as AggregateTemplateContext);
+                                        <div style="color:black">
+                                            @SumValue?.Sum
+                                        </div>
+                                    }
+                                </FooterTemplate>
+                            </GridAggregateColumn>
+                            <GridAggregateColumn Field="@nameof(DuDauKyTkDto.DuNoDauKyVND)" Type="AggregateType.Sum" Format="N0">
+                                <FooterTemplate>
+                                    @{
+                                        var SumValue = (context as AggregateTemplateContext);
+                                        <div style="color:black">
+                                            @SumValue?.Sum
+                                        </div>
+                                    }
+                                </FooterTemplate>
+                            </GridAggregateColumn>
+                            <GridAggregateColumn Field="@nameof(DuDauKyTkDto.DuCoDauKyVND)" Type="AggregateType.Sum" Format="N0">
+                                <FooterTemplate>
+                                    @{
+                                        var SumValue = (context as AggregateTemplateContext);
+                                        <div style="color:black">
+                                            @SumValue?.Sum
+                                        </div>
+                                    }
+                                </FooterTemplate>
+                            </GridAggregateColumn>
+                            <GridAggregateColumn Field="@nameof(DuDauKyTkDto.DuNoDauNam)" Type="AggregateType.Sum" Format="N4">
+                                <FooterTemplate>
+                                    @{
+                                        var SumValue = (context as AggregateTemplateContext);
+                                        <div style="color:black">
+                                            @SumValue?.Sum
+                                        </div>
+                                    }
+                                </FooterTemplate>
+                            </GridAggregateColumn>
+                            <GridAggregateColumn Field="@nameof(DuDauKyTkDto.DuCoDauNam)" Type="AggregateType.Sum" Format="N4">
+                                <FooterTemplate>
+                                    @{
+                                        var SumValue = (context as AggregateTemplateContext);
+                                        <div style="color:black">
+                                            @SumValue?.Sum
+                                        </div>
+                                    }
+                                </FooterTemplate>
+                            </GridAggregateColumn>
+                            <GridAggregateColumn Field="@nameof(DuDauKyTkDto.DuNoDauNamVND)" Type="AggregateType.Sum" Format="N0">
+                                <FooterTemplate>
+                                    @{
+                                        var SumValue = (context as AggregateTemplateContext);
+                                        <div style="color:black">
+                                            @SumValue?.Sum
+                                        </div>
+                                    }
+                                </FooterTemplate>
+                            </GridAggregateColumn>
+                            <GridAggregateColumn Field="@nameof(DuDauKyTkDto.DuCoDauNamVND)" Type="AggregateType.Sum" Format="N0">
+                                <FooterTemplate>
+                                    @{
+                                        var SumValue = (context as AggregateTemplateContext);
+                                        <div style="color:black">
+                                            @SumValue?.Sum
+                                        </div>
+                                    }
+                                </FooterTemplate>
+                            </GridAggregateColumn>
+                        </GridAggregateColumns>
+                    </GridAggregate>
+                </GridAggregates>
+            </SfGrid>
+        </div>
+    </div>
+    <SfDialog ID="duDauKyTk-edit" Width="700px" @bind-Visible="IsShowModalEdit" AllowPrerender="true" IsModal="true">
+        <DialogTemplates>
+            <Header>
+                <h1 class="thoiGianLamViec-title">
+                    <img src="/images/TreeView/tamkhoa.ico" alt="icon" width="20" height="20">
+                    <span style="text-align: center">
+                        Chỉnh sửa
+                    </span>
+                </h1>
+            </Header>
+            <Content>
+                <EditForm Model="SelectDuDauKyTk" Context="editForm" OnValidSubmit="@ConfirmEditAsync">
+                    <DataAnnotationsValidator />
+                    <div class="mb-1">
+                        <div class="row">
+                            <div class="col-sm-3">
+                                <label for="ChiNhanhId" class="form-label">Mã chi nhánh</label>
+                            </div>
+                            <div class="col-sm-3">
+                                <SfComboBox @ref="ddCNEdit" @bind-Value="@SelectDuDauKyTk.ChiNhanhId" DataSource="@ChiNhanhDtos" Enabled="false" Autofill="true" AllowCustom="false" CssClass="e-multi-column e-small" PopupWidth="700" PopupHeight="300">
+                                    <ComboBoxFieldSettings Value="Id" Text="ChiNhanhUd" />
+                                    <ComboBoxTemplates TItem="ChiNhanhDto">
+                                        <HeaderTemplate>
+                                            <table class="header-combo">
+                                                <thead>
+                                                    <tr>
+                                                        <th style="width:150px">Mã chi nhánh</th>
+                                                        <th>Tên chi nhánh</th>
+                                                        <th>Tên 2</th>
+                                                    </tr>
+                                                </thead>
+                                            </table>
+                                        </HeaderTemplate>
+                                        <ItemTemplate Context="itemContext">
+                                            <table>
+                                                <tbody>
+                                                    <tr>
+                                                        <td style="width:150px"><span>@((itemContext as ChiNhanhDto).ChiNhanhUd)</span></td>
+                                                        <td><span>@((itemContext as ChiNhanhDto).ChiNhanhNm)</span></td>
+                                                        <td><span>@((itemContext as ChiNhanhDto).ChiNhanhNm2)</span></td>
+                                                    </tr>
+                                                </tbody>
+                                            </table>
+                                        </ItemTemplate>
+                                    </ComboBoxTemplates>
+                                </SfComboBox>
+                            </div>
+                            <div class="col-sm-6">
+                                <SfTextBox ID="ChiNhanhNm" CssClass="e-small" @bind-Value="@(SelectDuDauKyTk.ChiNhanhNm)" Enabled="false"></SfTextBox>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mb-1">
+                        <div class="row">
+                            <div class="col-sm-3">
+                                <label for="TaiKhoanId" class="form-label">Số tài khoản</label>
+                            </div>
+                            <div class="col-sm-3">
+                                <SfComboBox @ref="ddTKEdit" @bind-Value="@SelectDuDauKyTk.TaiKhoanId" DataSource="@TaiKhoanDtos" Enabled="false" Autofill="true" AllowCustom="false" CssClass="e-multi-column e-small" PopupWidth="700" PopupHeight="300">
+                                    <ComboBoxFieldSettings Text="TaiKhoanUd" Value="Id"></ComboBoxFieldSettings>
+                                    <ComboBoxTemplates TItem="TaiKhoanDto">
+                                        <HeaderTemplate>
+                                            <table class="header-combo">
+                                                <tr>
+                                                    <th style="width:150px">Mã tài khoản</th>
+                                                    <th>Tên tài khoản</th>
+                                                    <th>Tên 2</th>
+                                                </tr>
+                                            </table>
+                                        </HeaderTemplate>
+                                        <ItemTemplate Context="itemContext">
+                                            <table>
+                                                <tbody>
+                                                    <tr>
+                                                        <td style="width:150px"><span>@((itemContext as TaiKhoanDto).TaiKhoanUd)</span></td>
+                                                        <td><span>@((itemContext as TaiKhoanDto).TaiKhoanNm)</span></td>
+                                                        <td><span>@((itemContext as TaiKhoanDto).TaiKhoanNm2)</span></td>
+                                                    </tr>
+                                                </tbody>
+                                            </table>
+                                        </ItemTemplate>
+                                    </ComboBoxTemplates>
+                                </SfComboBox>
+                            </div>
+                            <div class="col-sm-6">
+                                <SfTextBox ID="TaiKhoanNm" CssClass="e-small" @bind-Value="@(SelectDuDauKyTk.TaiKhoanNm)" Enabled="false"></SfTextBox>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-sm-6">
+                            <div class="mb-1">
+                                <div class="row">
+                                    <div class="col-sm-6">
+                                        <label for="DuNoDauKyVND" class="form-label">Dư nợ đầu kỳ</label>
+                                    </div>
+                                    <div class="col-sm-6">
+                                        <SfNumericTextBox ShowSpinButton="false" ID="DuNoDauKyVND" Format="N0" CssClass="e-small" @bind-Value="@(SelectDuDauKyTk.DuNoDauKyVND)" @onchange="OnValueChangeDuNoDauKyVND" Enabled="SelectDuDauKyTk.IsNotTkCongNoOrTkVatTu"></SfNumericTextBox>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="mb-1">
+                                <div class="row">
+                                    <div class="col-sm-6">
+                                        <label for="DuCoDauKyVND" class="form-label">Dư có đầu kỳ</label>
+                                    </div>
+                                    <div class="col-sm-6">
+                                        <SfNumericTextBox ShowSpinButton="false" ID="DuCoDauKyVND" Format="N0" CssClass="e-small" @bind-Value="@(SelectDuDauKyTk.DuCoDauKyVND)" @onchange="OnValueChangeDuCoDauKyVND" Enabled="SelectDuDauKyTk.IsNotTkCongNoOrTkVatTu"></SfNumericTextBox>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="mb-1">
+                                <div class="row">
+                                    <div class="col-sm-6">
+                                        <label for="DuNoDauKy" class="form-label">Dư nơ đầu kỳ ngoại tệ</label>
+                                    </div>
+                                    <div class="col-sm-6">
+                                        <SfNumericTextBox ShowSpinButton="false" ID="DuNoDauKy" Format="N4" CssClass="e-small" @bind-Value="@(SelectDuDauKyTk.DuNoDauKy)" @onchange="OnValueChangeDuNoDauKy" Enabled="SelectDuDauKyTk.IsNotTkCongNoOrTkVatTu"></SfNumericTextBox>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="mb-1">
+                                <div class="row">
+                                    <div class="col-sm-6">
+                                        <label for="DuCoDauKy" class="form-label">Dư có đầu kỳ ngoại tệ</label>
+                                    </div>
+                                    <div class="col-sm-6">
+                                        <SfNumericTextBox ShowSpinButton="false" ID="DuCoDauKy" Format="N4" CssClass="e-small" @bind-Value="@(SelectDuDauKyTk.DuCoDauKy)" @onchange="OnValueChangeDuCoDauKy" Enabled="SelectDuDauKyTk.IsNotTkCongNoOrTkVatTu"></SfNumericTextBox>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-sm-6">
+                            <div class="mb-1">
+                                <div class="row">
+                                    <div class="col-sm-6">
+                                        <label for="DuNoDauNamVND" class="form-label">Dư nợ đầu năm</label>
+                                    </div>
+                                    <div class="col-sm-6">
+                                        <SfNumericTextBox ShowSpinButton="false" ID="DuNoDauNamVND" Format="N0" CssClass="e-small" @bind-Value="@(SelectDuDauKyTk.DuNoDauNamVND)" @onchange="OnValueChangeDuNoDauNamVND"></SfNumericTextBox>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="mb-1">
+                                <div class="row">
+                                    <div class="col-sm-6">
+                                        <label for="DuCoDauNamVND" class="form-label">Dư có đầu năm</label>
+                                    </div>
+                                    <div class="col-sm-6">
+                                        <SfNumericTextBox ShowSpinButton="false" ID="DuCoDauNamVND" Format="N0" CssClass="e-small" @bind-Value="@(SelectDuDauKyTk.DuCoDauNamVND)" @onchange="OnValueChangeDuCoDauNamVND"></SfNumericTextBox>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="mb-1">
+                                <div class="row">
+                                    <div class="col-sm-6">
+                                        <label for="DuNoDauNam" class="form-label">Dư nợ đầu năm ngoại tệ</label>
+                                    </div>
+                                    <div class="col-sm-6">
+                                        <SfNumericTextBox ShowSpinButton="false" ID="DuNoDauNam" Format="N4" CssClass="e-small" @bind-Value="@(SelectDuDauKyTk.DuNoDauNam)" @onchange="OnValueChangeDuNoDauNam"></SfNumericTextBox>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="mb-1">
+                                <div class="row">
+                                    <div class="col-sm-6">
+                                        <label for="DuCoDauNam" class="form-label">Dư có đầu năm ngoại tệ</label>
+                                    </div>
+                                    <div class="col-sm-6">
+                                        <SfNumericTextBox ShowSpinButton="false" ID="DuCoDauNam" Format="N4" CssClass="e-small" @bind-Value="@(SelectDuDauKyTk.DuCoDauNam)" @onchange="OnValueChangeDuCoDauNam"></SfNumericTextBox>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row-line"></div>
+                    <div style="margin: 0px -8px" class="modal-footer">
+                        <button type="button" class="btn btn-sm btn-danger" @onclick="CloseModalEdit">Hủy</button>
+                        <button type="submit" class="btn btn-sm btn-primary">Lưu</button>
+                    </div>
+                </EditForm>
+            </Content>
+        </DialogTemplates>
+    </SfDialog>
+
+    <SfDialog ID="duDauKyTk-tinhTong" Width="532px" @bind-Visible="IsShowModalTinhTong" AllowPrerender="true" IsModal="true">
+        <DialogTemplates>
+            <Header>
+                <h1 class="thoiGianLamViec-title">
+                    <img src="/images/TreeView/tamkhoa.ico" alt="icon" width="20" height="20">
+                    <span style="text-align: center">
+                       Tính tổng
+                    </span>
+                </h1>
+            </Header>
+            <Content>
+                <div class="mb-1">
+                    <div class="row">
+                        <div class="col-sm-3">
+                        <label for="TinhTongTaiKhoanId" class="form-label">Tài khoản</label>
+                        </div>
+                        <div class="col-sm-3">
+                            <SfComboBox @ref="ddTKTinhTong" @bind-Value="@TinhTongTaiKhoanId" DataSource="@TaiKhoanDtos" AllowFiltering="true" Autofill="true" AllowCustom="false" CssClass="e-multi-column e-small" PopupWidth="700" PopupHeight="300">
+                            <ComboBoxEvents TValue="int?" TItem="TaiKhoanDto" Filtering="OnFilteringTaiKhoanTinhTong" ValueChange="OnValueChangeTaiKhoanTinhTong"></ComboBoxEvents>
+                            <ComboBoxFieldSettings Text="TaiKhoanUd" Value="Id"></ComboBoxFieldSettings>
+                            <ComboBoxTemplates TItem="TaiKhoanDto">
+                                <HeaderTemplate>
+                                    <table class="header-combo">
+                                        <tr>
+                                            <th style="width:150px">Mã tài khoản</th>
+                                            <th>Tên tài khoản</th>
+                                            <th>Tên 2</th>
+                                        </tr>
+                                    </table>
+                                </HeaderTemplate>
+                                <ItemTemplate Context="itemContext">
+                                    <table>
+                                        <tbody>
+                                            <tr>
+                                                <td style="width:150px"><span>@((itemContext as TaiKhoanDto).TaiKhoanUd)</span></td>
+                                                <td><span>@((itemContext as TaiKhoanDto).TaiKhoanNm)</span></td>
+                                                <td><span>@((itemContext as TaiKhoanDto).TaiKhoanNm2)</span></td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </ItemTemplate>
+                            </ComboBoxTemplates>
+                        </SfComboBox>
+                        </div>
+                        <div class="col-sm-6">
+                        <SfTextBox ID="TinhTongTaiKhoanNm" CssClass="e-small" @bind-Value="@TinhTongTaiKhoanNm" Enabled="false"></SfTextBox>
+                        </div>
+                    </div>
+                </div>
+                <br />
+                <div class="row g-3">
+                    <SfGrid ID="gridDuDauKyTk-tinhTong" @ref="SfGridTinhTong" DataSource="@TinhTongDtos" EnablePersistence="true" AllowSelection="true" AllowSorting="true" AllowResizing="true" AllowReordering="true" Width="auto" Height="160">
+                        <GridEditSettings AllowAdding="false" AllowEditing="false" AllowDeleting="false"></GridEditSettings>
+                        <GridColumns>
+                            <GridColumn Field=@nameof(TinhTongDto.DienGiai) HeaderText="Diễn giải" TextAlign="TextAlign.Left" Width="200"></GridColumn>
+                            <GridColumn Field=@nameof(TinhTongDto.Tien) HeaderText="Tiền ngoại tệ" TextAlign="TextAlign.Right" Width="150" Format="N4"></GridColumn>
+                            <GridColumn Field=@nameof(TinhTongDto.TienVND) HeaderText="Tiền" TextAlign="TextAlign.Right" Width="150" Format="N0"></GridColumn>
+                        </GridColumns>
+                    </SfGrid>
+                </div>
+                <div class="row-line"></div>
+                <div style="margin: 0px -8px" class="modal-footer">
+                    <button type="button" class="btn btn-sm btn-danger" @onclick="CloseModalTinhTong">Đóng</button>
+                    <button type="button" class="btn btn-sm btn-primary" @onclick="TinhTongAsync">Nhận</button>
+                </div>
+            </Content>
+        </DialogTemplates>
+    </SfDialog>
+    <ModalErrorMessage ShowModalMessage="@ShowModalMessage" CheckMessage="@CheckMessage" TextMessage="@TextMessage" IsDelete="@CheckDelete"
+                       OnCloseMessage="CloseModalMessage" OnConfirmDelele="ConfirmDeleleAsync" />
+}
+else
+{
+    <h3>Vui lòng chờ....</h3>
+}
+<style>
+    #navbarMenu-edit {
+        margin: 0 0 0 16px;
+    }
+
+    #DuNoDauKyVND, #DuNoDauNamVND, #DuCoDauKyVND, #DuCoDauNamVND, #DuNoDauKy, #DuNoDauNam, #DuCoDauKy, #DuCoDauNam {
+        text-align: end;
+        padding-right: 8px;
+    }
+</style>
+@code {
+    private bool hasRefreshed = false;
+    private string ContentNavbarMenu = "số dư đầu kỳ tài khoản";
+    private string HelpUrl = "https://tamkhoatech.vn/huong-dan-su-dung/cap-nhat-so-du-dau-ky-tai-khoan/";
+    private bool ShowModalMessage = false;
+    private bool CheckMessage = false;
+    private string? TextMessage { set; get; }
+    private bool CheckDelete { set; get; } = false;
+    private bool IsDeleted { set; get; } = false;
+
+    private bool IsShowModal = true;
+    private DauKyRequest SelectDauKy = new DauKyRequest();
+    private List<ChiNhanhDto>? ChiNhanhDtos;
+    private SfComboBox<int?, ChiNhanhDto> ddCN = new SfComboBox<int?, ChiNhanhDto>();
+    private SfComboBox<int?, ChiNhanhDto> ddCNEdit = new SfComboBox<int?, ChiNhanhDto>();
+    private SfGrid<DuDauKyTkDto> SfGrid = new SfGrid<DuDauKyTkDto>();
+    public List<DuDauKyTkDto> DuDauKyTkDtos = new List<DuDauKyTkDto>();
+
+    private bool IsShowModalEdit = false;
+    private DuDauKyTkRequest SelectDuDauKyTk = new DuDauKyTkRequest();
+    private List<TaiKhoanDto>? TaiKhoanDtos;
+    private SfComboBox<int?, TaiKhoanDto> ddTK = new SfComboBox<int?, TaiKhoanDto>();
+    private SfComboBox<int?, TaiKhoanDto> ddTKEdit = new SfComboBox<int?, TaiKhoanDto>();
+    private SfComboBox<int?, TaiKhoanDto> ddTKTinhTong = new SfComboBox<int?, TaiKhoanDto>();
+
+    private bool IsShowModalTinhTong = false;
+    private int? TinhTongTaiKhoanId { set; get; }
+    private string? TinhTongTaiKhoanNm { set; get; }
+    private SfGrid<TinhTongDto> SfGridTinhTong = new SfGrid<TinhTongDto>();
+    public List<TinhTongDto> TinhTongDtos = new List<TinhTongDto>();
+    protected override async Task OnInitializedAsync()
+    {
+        if (!hasRefreshed)
+        {
+            ChiNhanhDtos = await _chiNhanh.GetListAsync();
+            var chiNhanhId = await _localStorage.GetItemAsync<int?>("ChiNhanhHeThongId");
+            var thamSo = await _thamSo.GetByThamSoHeThongUdAsync("NLDT_DATE");
+            if (!chiNhanhId.HasValue)
+            {
+                var chiNhanh = ChiNhanhDtos.First(x => x.ChiNhanhUd == "TCT");
+                SelectDauKy.ChiNhanhId = chiNhanh.Id;
+                SelectDauKy.ChiNhanhNm = chiNhanh.ChiNhanhNm;
+            }
+            else
+            {
+                SelectDauKy.ChiNhanhId = chiNhanhId;
+                SelectDauKy.ChiNhanhNm = ChiNhanhDtos.First(x=>x.Id == chiNhanhId).ChiNhanhNm;
+            }
+            SelectDauKy.Ngay = thamSo.GiaTriDate ?? DateTime.Now;
+            TaiKhoanDtos = await _taiKhoan.GetListAsync();
+            hasRefreshed = true;
+        }
+
+    }
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender)
+        {
+            await _jsRuntime.InvokeVoidAsync("renameShowColumn", "Tìm kiếm...");
+            await _jsRuntime.InvokeVoidAsync("getDotNetObjectReference", DotNetObjectReference.Create(this));
+        }
+    }
+    private async Task ConfirmSelectAsync()
+    {
+        DuDauKyTkDtos = await _duDauKyTk.GetListAsync(SelectDauKy);
+        await this.SfGrid.Refresh();
+        IsShowModal = false;
+    }
+    public async Task OnFilteringChiNhanh(Syncfusion.Blazor.DropDowns.FilteringEventArgs args)
+    {
+        args.PreventDefaultAction = true;
+        var orWhere = WhereFilter.Or(new List<WhereFilter> {
+            new WhereFilter() { Field = "ChiNhanhUd", Operator = "contains", value = args.Text, IgnoreCase = true },
+            new WhereFilter() { Field = "ChiNhanhNm", Operator = "contains", value = args.Text, IgnoreCase = true }
+        });
+        var query = new Query().Where(orWhere);
+        query = !string.IsNullOrEmpty(args.Text) ? query : new Query();
+        await ddCN.FilterAsync(ChiNhanhDtos, query);
+    }
+    private void OnValueChangeChiNhanh(ChangeEventArgs<int?, ChiNhanhDto> args)
+    {
+        if (args.ItemData != null)
+        {
+            SelectDauKy.ChiNhanhNm = args.ItemData.ChiNhanhNm;
+        }
+
+    }
+    private async Task OnKeyUp(KeyboardEventArgs args)
+    {
+        if (args.Key == "F3")
+        {
+            await this.EditAsync();
+        }
+        else if (args.Key == "F9")
+        {
+            await this.ExportToExcelAsync();
+        }
+        else if (args.Key == "F8")
+        {
+            await this.DeleteAsync();
+        }   
+        else if (args.Key == "F10")
+        {
+            IsShowModalTinhTong = true;
+        }
+
+    }
+    private async Task EditAsync()
+    {
+        var selectedRecords = await SfGrid.GetSelectedRecordsAsync();
+        if (selectedRecords.Count > 0)
+        {
+            var item = await _duDauKyTk.GetByIdAsync(selectedRecords.First().Id);
+            SelectDuDauKyTk = _objectMapper.Map<DuDauKyTkDto, DuDauKyTkRequest>(item);
+            IsShowModalEdit = true;
+        }
+        else
+        {
+            TextMessage = "Bạn chưa chọn dòng.";
+            CheckMessage = false;
+            ShowModalMessage = true;
+        }
+        StateHasChanged();
+    }
+    public async Task RecordDoubleClickHandler(RecordDoubleClickEventArgs<DuDauKyTkDto> args)
+    {
+        var item = await _duDauKyTk.GetByIdAsync(args.RowData.Id);
+        SelectDuDauKyTk = _objectMapper.Map<DuDauKyTkDto, DuDauKyTkRequest>(item);
+        IsShowModalEdit = true;
+        StateHasChanged();
+    }
+    private async Task DeleteAsync()
+    {
+        var selectedRecords = await SfGrid.GetSelectedRecordsAsync();
+        if (selectedRecords.Count > 0)
+        {
+            CheckDelete = true;
+            string names = "";
+            foreach (var data in selectedRecords)
+                names += data.TaiKhoanUd + ", ";
+            names = names.TrimEnd(',', ' ');
+            TextMessage = $"Xác nhận xóa <b>{selectedRecords.Count.ToString("00")}</b> tài khoản có mã {(selectedRecords.Count > 1 ? "gồm" : "")}: <span style='color:red'>{names}</span>";
+            ShowModalMessage = true;
+        }
+        else
+        {
+            TextMessage = "Bạn chưa chọn dòng.";
+            ShowModalMessage = true;
+            CheckMessage = false;
+        }
+        StateHasChanged();
+    }
+    private async Task ConfirmDeleleAsync()
+    {
+        CheckDelete = false;
+        var selectedRecords = await SfGrid.GetSelectedRecordsAsync();
+        if (selectedRecords.Count > 0)
+        {
+            var ids = new List<int?>();
+            foreach (var data in selectedRecords)
+                ids.Add(data.Id);
+            var result = await _duDauKyTk.DeleteListAsync(ids);
+            if (result.IsSuccessed)
+            {
+                IsDeleted = true;
+                DuDauKyTkDtos = await _duDauKyTk.GetListAsync(SelectDauKy, IsDeleted);
+                await this.SfGrid.Refresh();
+            }
+            TextMessage = result.Message;
+            CheckMessage = result.IsSuccessed;
+            ShowModalMessage = true;
+        }
+    }
+    private async Task RefreshAsync()
+    {
+        await this.SfGrid.SearchAsync(string.Empty);
+        DuDauKyTkDtos = await _duDauKyTk.GetListAsync(SelectDauKy, IsDeleted);
+        await this.SfGrid.Refresh();
+    }
+    private async Task ExportToExcelAsync()
+    {
+        string name = "Danh sách số dư đầu kỳ tài khoản";
+        var content = _duDauKyTk.ExportExcel(DuDauKyTkDtos, name);
+        var fileName = $"{name}.xlsx";
+        var contentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+        var base64 = Convert.ToBase64String(content);
+        await _jsRuntime.InvokeVoidAsync("downloadFileFromBase64", fileName, contentType, base64);
+    }
+    //Call Back From Js function
+    [JSInvokable("searchInputNavbar")]
+    public async Task SearchAsync(string search)
+    {
+        await this.SfGrid.SearchAsync(search);
+    }  
+    public async Task ConfirmEditAsync()
+    {
+        var result = await _duDauKyTk.UpdateAsync(SelectDuDauKyTk.Id, SelectDuDauKyTk);
+        if(result.IsSuccessed)
+        {
+            IsShowModalEdit = false;
+            DuDauKyTkDtos = await _duDauKyTk.GetListAsync(SelectDauKy, IsDeleted);
+            await this.SfGrid.Refresh();
+        }
+        TextMessage = result.Message;
+        CheckMessage = result.IsSuccessed;
+        ShowModalMessage = true;
+    }
+    private void CloseModalEdit()
+    {
+        IsShowModalEdit = false;
+    }   
+    private async Task TinhTongAsync()
+    {
+        TinhTongDtos = await _duDauKyTk.TinhTongAsync(TinhTongTaiKhoanId, DuDauKyTkDtos);
+        await this.SfGridTinhTong.Refresh();
+    } 
+    public async Task OnFilteringTaiKhoanTinhTong(Syncfusion.Blazor.DropDowns.FilteringEventArgs args)
+    {
+        args.PreventDefaultAction = true;
+        var orWhere = WhereFilter.Or(new List<WhereFilter> {
+            new WhereFilter() { Field = "TaiKhoanUd", Operator = "contains", value = args.Text, IgnoreCase = true },
+            new WhereFilter() { Field = "TaiKhoanNm", Operator = "contains", value = args.Text, IgnoreCase = true }
+        });
+        var query = new Query().Where(orWhere);
+        query = !string.IsNullOrEmpty(args.Text) ? query : new Query();
+        await ddTKTinhTong.FilterAsync(TaiKhoanDtos, query);
+    }
+    private void OnValueChangeTaiKhoanTinhTong(ChangeEventArgs<int?, TaiKhoanDto> args)
+    {
+        if (args.ItemData != null)
+            TinhTongTaiKhoanNm = args.ItemData.TaiKhoanNm;
+        else
+            TinhTongTaiKhoanNm = null;
+    }
+    private void CloseModalTinhTong()
+    {
+        IsShowModalTinhTong = false;
+    }    
+    private void CloseModalMessage()
+    {
+        ShowModalMessage = false;
+        CheckMessage = false;
+    }
+    private void OnValueChangeDuNoDauKyVND(Microsoft.AspNetCore.Components.ChangeEventArgs args)
+    {
+        SelectDuDauKyTk.DuNoDauKyVND = decimal.Parse(args.Value?.ToString() == "" ? "0" : args.Value?.ToString() ?? "0");
+        SelectDuDauKyTk.DuCoDauKyVND = 0;
+        SelectDuDauKyTk.DuCoDauKy = 0;
+    }
+    private void OnValueChangeDuNoDauKy(Microsoft.AspNetCore.Components.ChangeEventArgs args)
+    {
+        SelectDuDauKyTk.DuNoDauKy = decimal.Parse(args.Value?.ToString() == "" ? "0" : args.Value?.ToString() ?? "0");
+        SelectDuDauKyTk.DuCoDauKyVND = 0;
+        SelectDuDauKyTk.DuCoDauKy = 0;
+    }
+    private void OnValueChangeDuCoDauKyVND(Microsoft.AspNetCore.Components.ChangeEventArgs args)
+    {
+        SelectDuDauKyTk.DuCoDauKyVND = decimal.Parse(args.Value?.ToString() == "" ? "0" : args.Value?.ToString() ?? "0");
+        SelectDuDauKyTk.DuNoDauKyVND = 0;
+        SelectDuDauKyTk.DuNoDauKy = 0;
+    }
+    private void OnValueChangeDuCoDauKy(Microsoft.AspNetCore.Components.ChangeEventArgs args)
+    {
+        SelectDuDauKyTk.DuCoDauKy = decimal.Parse(args.Value?.ToString() == "" ? "0" : args.Value?.ToString() ?? "0");
+        SelectDuDauKyTk.DuNoDauKyVND = 0;
+        SelectDuDauKyTk.DuNoDauKy = 0;
+    }
+    private void OnValueChangeDuNoDauNamVND(Microsoft.AspNetCore.Components.ChangeEventArgs args)
+    {
+        SelectDuDauKyTk.DuNoDauNamVND = decimal.Parse(args.Value?.ToString() == "" ? "0" : args.Value?.ToString() ?? "0");
+        SelectDuDauKyTk.DuCoDauNamVND = 0;
+        SelectDuDauKyTk.DuCoDauNam = 0;
+    }
+    private void OnValueChangeDuNoDauNam(Microsoft.AspNetCore.Components.ChangeEventArgs args)
+    {
+        SelectDuDauKyTk.DuNoDauNam = decimal.Parse(args.Value?.ToString() == "" ? "0" : args.Value?.ToString() ?? "0");
+        SelectDuDauKyTk.DuCoDauNamVND = 0;
+        SelectDuDauKyTk.DuCoDauNam = 0;
+    }
+    private void OnValueChangeDuCoDauNamVND(Microsoft.AspNetCore.Components.ChangeEventArgs args)
+    {
+        SelectDuDauKyTk.DuCoDauNamVND = decimal.Parse(args.Value?.ToString() == "" ? "0" : args.Value?.ToString() ?? "0");
+        SelectDuDauKyTk.DuNoDauNamVND = 0;
+        SelectDuDauKyTk.DuNoDauNam = 0;
+    }
+    private void OnValueChangeDuCoDauNam(Microsoft.AspNetCore.Components.ChangeEventArgs args)
+    {
+        SelectDuDauKyTk.DuCoDauNam = decimal.Parse(args.Value?.ToString() == "" ? "0" : args.Value?.ToString() ?? "0");
+        SelectDuDauKyTk.DuNoDauNamVND = 0;
+        SelectDuDauKyTk.DuNoDauNam = 0;
+    }
+}

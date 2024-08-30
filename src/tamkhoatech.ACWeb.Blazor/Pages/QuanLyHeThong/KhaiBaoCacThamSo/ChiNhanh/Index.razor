@@ -1,0 +1,420 @@
+﻿@page "/chinhanh"
+@using Syncfusion.Blazor.Grids
+@using Syncfusion.Blazor.Popups
+@using Syncfusion.Blazor.Inputs
+@using Syncfusion.Blazor.Buttons
+@using Volo.Abp.ObjectMapping
+@using Blazored.LocalStorage;
+@using tamkhoatech.ACWeb.Blazor.Pages.Common
+@using tamkhoatech.ACWeb.Constants
+@using tamkhoatech.ACWeb.Dto
+@using tamkhoatech.ACWeb.IService
+
+@inject NavigationManager NavigationManager
+@inject ILocalStorageService _localStorage
+@inject IJSRuntime JSRunTime
+@inject IObjectMapper _objectMapper
+@inject IChiNhanhService _chiNhanh
+
+<link rel="stylesheet" href="/Css/danh-sach-phieu.css">
+@if (hasRefreshed)
+{
+    <div class="row gy-2 gx-3 align-items-center">
+        <div class="col-auto">
+            <h4>
+                <label>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="25" height="25" fill="currentColor" class="bi bi-diagram-3-fill" viewBox="0 0 16 16">
+                        <path fill-rule="evenodd" d="M6 3.5A1.5 1.5 0 0 1 7.5 2h1A1.5 1.5 0 0 1 10 3.5v1A1.5 1.5 0 0 1 8.5 6v1H14a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-1 0V8h-5v.5a.5.5 0 0 1-1 0V8h-5v.5a.5.5 0 0 1-1 0v-1A.5.5 0 0 1 2 7h5.5V6A1.5 1.5 0 0 1 6 4.5zm-6 8A1.5 1.5 0 0 1 1.5 10h1A1.5 1.5 0 0 1 4 11.5v1A1.5 1.5 0 0 1 2.5 14h-1A1.5 1.5 0 0 1 0 12.5zm6 0A1.5 1.5 0 0 1 7.5 10h1a1.5 1.5 0 0 1 1.5 1.5v1A1.5 1.5 0 0 1 8.5 14h-1A1.5 1.5 0 0 1 6 12.5zm6 0a1.5 1.5 0 0 1 1.5-1.5h1a1.5 1.5 0 0 1 1.5 1.5v1a1.5 1.5 0 0 1-1.5 1.5h-1a1.5 1.5 0 0 1-1.5-1.5z" />
+                    </svg>
+                    <strong>Danh sách chi nhánh</strong>
+                </label>
+            </h4>
+        </div>
+    </div>
+    <br>
+    <div class="row g-3">
+                <NavbarMenu Content="@ContentNavbarMenu" IsAdd="true" OnValidSubmitAdd="@AddAsync" 
+                                         IsEdit="true" OnValidSubmitEdit="@EditAsync" 
+                                         IsDelete="true" OnValidSubmitDelete="@DeleteAsync"
+                                         IsPrint = "true" OnValidSubmitPrint="@PrintAsync"
+                                         IsShowColumn="true" OnValidSubmitShowColumn="@ShowColumnAsync"
+                                         IsRefresh="true" OnValidSubmitRefresh="@RefreshAsync"
+                                         IsSearch="true" OnValidSubmitSearch="@SearchAsync"
+                                         HelpUrl=@HelpUrl />
+    </div>
+    <br />
+    <div class="row g-3">
+        <SfGrid ID="ChiNhanh" @ref="SfGridCN" DataSource="@ChiNhanhDtos" EnablePersistence="true" AllowSelection="true" AllowPaging="true" AllowSorting="true" AllowResizing="true" AllowReordering="true" AllowExcelExport="true" ShowColumnChooser="true" Width="auto" Height="360">
+            <GridColumnChooserSettings>
+                <FooterTemplate>
+                    @{
+                        var ContextData = context as ColumnChooserFooterTemplateContext;
+                        if (ContextData != null)
+                        {
+                            var visibles = ContextData.Columns.Where(x => x.Visible).Select(x => x.HeaderText).ToArray();
+                            var hiddens = ContextData.Columns.Where(x => !x.Visible).Select(x => x.HeaderText).ToArray();
+                            <SfButton IsPrimary="true" OnClick="@(async () => {
+                        await SfGridCN.ShowColumnsAsync(visibles);
+                        await SfGridCN.HideColumnsAsync(hiddens); })">Nhận</SfButton>
+                            <SfButton @onclick="@(async () => await ContextData.CancelAsync())">Hủy</SfButton>
+                        }
+                    }
+                </FooterTemplate>
+            </GridColumnChooserSettings>
+            <GridSelectionSettings CheckboxMode="CheckboxSelectionType.ResetOnRowClick" Type="Syncfusion.Blazor.Grids.SelectionType.Single"></GridSelectionSettings>
+            <GridEditSettings AllowAdding="false" AllowEditing="false" AllowDeleting="false"></GridEditSettings>
+            <GridPageSettings PageSize="10"></GridPageSettings>
+            <GridEvents OnRecordDoubleClick="RecordDoubleClickHandler" TValue="ChiNhanhDto"></GridEvents>
+            <GridColumns>
+                <GridColumn Type="ColumnType.CheckBox" Width="50" TextAlign="TextAlign.Center"></GridColumn>
+                <GridColumn Field=@nameof(ChiNhanhDto.Id) HeaderText="#" Visible="false" ShowInColumnChooser="false" IsPrimaryKey="true" TextAlign="TextAlign.Center" Width="120"></GridColumn>
+                <GridColumn Field=@nameof(ChiNhanhDto.ChiNhanhUd) HeaderText="Mã chi nhánh" TextAlign="TextAlign.Left" Width="120"></GridColumn>
+                <GridColumn Field=@nameof(ChiNhanhDto.ChiNhanhNm) HeaderText="Tên chi nhánh" TextAlign="TextAlign.Left" Width="120"></GridColumn>
+                <GridColumn Field=@nameof(ChiNhanhDto.ChiNhanhNm2) HeaderText="Tên 2" TextAlign="TextAlign.Left" Width="120"></GridColumn>
+            </GridColumns>
+        </SfGrid>
+    </div>
+    <br />
+
+    <!-- ModalCreate -->
+    <SfDialog ID="modalCreate" Width="640px" @bind-Visible="ShowModalCreate" AllowPrerender="true" IsModal="true">
+        <DialogTemplates>
+            <Header>
+                @if(CheckAdd)
+                {
+                        <div class="title">
+                    <h1 class="modal-title fs-5">
+
+                        <img src="/images/Button/Moi.png" alt="icon" width="16" height="16">
+                        Thêm mới
+                    </h1>
+                    </div>
+                }else{
+                        <div class="title">
+                    <h1 class="modal-title fs-5">
+                        <img src="/images/Button/Sua.png" alt="icon" width="16" height="16">
+                        Chỉnh sửa
+                    </h1>
+                    </div>
+                }
+            </Header>
+            <Content>
+                <div class="container">
+                    <EditForm Model="SelectChiNhanh" Context="editFormCN" OnValidSubmit="@SaveAsync">
+                        <DataAnnotationsValidator />
+                        <div class="mb-1">
+                            <div class="row">
+                                <div class="col-sm-3">
+                                    <label for="ChiNhanhUd" class="form-label">Mã chi nhánh <span class="text-danger">*</span></label>
+                                </div>
+                                <div class="col-sm-3">
+                                    <SfTextBox ID="ChiNhanhUd" CssClass="e-small" @bind-Value="@(SelectChiNhanh.ChiNhanhUd)" @oninput="ConvertToUpperCase"></SfTextBox>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mb-1">
+                            <div class="row">
+                                <div class="col-sm-3">
+                                    <label for="ChiNhanhNm" class="form-label">Tên chi nhánh <span class="text-danger">*</span></label>
+                                </div>
+                                <div class="col-sm-9">
+                                    <SfTextBox ID="ChiNhanhNm" CssClass="e-small" @bind-Value="@(SelectChiNhanh.ChiNhanhNm)"></SfTextBox>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mb-1">
+                            <div class="row">
+                                <div class="col-sm-3">
+                                    <label for="ChiNhanhNm2" class="form-label">Tên 2</label>
+                                </div>
+                                <div class="col-sm-9">
+                                    <SfTextBox ID="ChiNhanhNm2" CssClass="e-small" @bind-Value="@(SelectChiNhanh.ChiNhanhNm2)"></SfTextBox>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row-line"></div>
+                        <div class="d-flex">
+                            <button type="submit" class="btn btn-sm btn-primary">Nhận</button>
+                            <button type="button" class="btn btn-sm btn-danger" @onclick="CloseModalCreate">Hủy</button>
+                            <button type="button" class="btn btn-sm btn-secondary" @onclick="Reset">Làm mới</button>
+                        </div>
+                    </EditForm>
+                </div>
+            </Content>
+        </DialogTemplates>
+    </SfDialog>
+
+
+    <!--Modal Message Error-->
+    <ModalErrorMessage ShowModalMessage="@ShowModalMessage" CheckMessage="@CheckMessage" TextMessage="@TextMessage" IsDelete="@CheckDelete"
+                       OnCloseMessage="CloseModalMessage" OnConfirmDelele="ConfirmDeleleAsync" />
+}
+else
+{
+    <h3>Vui lòng chờ....</h3>
+}
+
+@code {
+    private bool hasRefreshed = false;
+    private string ContentNavbarMenu = "chi nhánh";
+    private string HelpUrl = "https://tamkhoatech.vn/huong-dan-su-dung/danh-sach-ma-chi-nhanh/";
+    private bool ShowModalMessage = false;
+    private bool CheckMessage = false;
+    private string? TextMessage { set; get; }
+    private bool CheckDelete { set; get; } = false;
+    private bool ShowModalCreate = false;
+    private bool CheckAdd = true;
+    private SfGrid<ChiNhanhDto> SfGridCN = new SfGrid<ChiNhanhDto>();
+    private SfPager Page = new();
+    public List<ChiNhanhDto> ChiNhanhDtos = new List<ChiNhanhDto>();
+
+    public ChiNhanhRequest SelectChiNhanh = new ChiNhanhRequest();
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!hasRefreshed)
+        {
+            ChiNhanhDtos = await _chiNhanh.GetListAsync();
+            hasRefreshed = true;
+        }
+    }
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender)
+        {
+            await JSRunTime.InvokeVoidAsync("renameShowColumn", "Tìm kiếm...");
+            await JSRunTime.InvokeVoidAsync("getDotNetObjectReference", DotNetObjectReference.Create(this));
+        }
+    }
+    public void AddAsync()
+    {
+        ShowModalCreate = true;
+    }
+    public async Task EditAsync()
+    {
+        try
+        {
+            CheckAdd = false;
+            SelectChiNhanh = new ChiNhanhRequest();
+            var selectedRecords = await SfGridCN.GetSelectedRecordsAsync();
+            if (selectedRecords.Count > 0)
+            {
+                await _localStorage.SetItemAsync<string>("chiNhanhId", selectedRecords.First().Id.ToString() ?? "");
+                var chiNhanh = await _chiNhanh.GetByIdAsync(selectedRecords.First().Id);
+                SelectChiNhanh = _objectMapper.Map<ChiNhanhDto, ChiNhanhRequest>(chiNhanh);
+                ShowModalCreate = true;
+            }
+            else
+            {
+                CheckAdd = true;
+                CheckMessage = false;
+                TextMessage = "Bạn chưa chọn dòng.";
+                ShowModalMessage = true;
+            }
+
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.Message);
+            CheckAdd = true;
+            CheckMessage = false;
+            TextMessage = "Lỗi hệ thống! Vui lòng liên hệ bộ phận kỹ thuật để được hổ trợ.";
+            ShowModalMessage = true;
+        }
+
+        StateHasChanged();
+    }
+    public async Task DeleteAsync()
+    {
+        var selectedRecords = await SfGridCN.GetSelectedRecordsAsync();
+        if (selectedRecords.Count > 0)
+        {
+            CheckDelete = true;
+            string names = "";
+            foreach (var data in selectedRecords)
+                names += data.ChiNhanhUd + ", ";
+            names = names.TrimEnd(',', ' ');
+            TextMessage = $"Xác nhận xóa <b>{selectedRecords.Count.ToString("00")}</b> chi nhánh có mã {(selectedRecords.Count > 1 ? "gồm" : "")}: <span style='color:red'>{names}</span>";
+            ShowModalMessage = true;
+        }
+        else
+        {
+            TextMessage = "Bạn chưa chọn dòng.";
+            ShowModalMessage = true;
+            CheckDelete = false;
+        }
+        StateHasChanged();
+    }    
+    public async Task ExportToExcelAsync()
+    {
+        ExcelExportProperties ExcelProperties = new ExcelExportProperties();
+        ExcelProperties.FileName = "ChiNhanh.xlsx";
+        await this.SfGridCN.ExportToExcelAsync(ExcelProperties);
+    }    
+    public async Task ShowColumnAsync()
+    {
+        await this.SfGridCN.OpenColumnChooserAsync();
+    }
+
+    public async Task RefreshAsync()
+    {
+        await this.SfGridCN.SearchAsync(string.Empty);
+        ChiNhanhDtos = await _chiNhanh.GetListAsync();
+        StateHasChanged();
+    }
+    //Call Back From Js function
+    [JSInvokable("searchInputNavbar")]
+    public async Task SearchAsync(string search)
+    {
+        await this.SfGridCN.SearchAsync(search);
+    }
+    private async Task SaveAsync()
+    {
+        try
+        {
+            if (CheckAdd)
+            {
+                var result = await _chiNhanh.CreateAsync(SelectChiNhanh);
+                if (result.IsSuccessed)
+                {
+                    CheckMessage = true;
+                    ChiNhanhDtos = await _chiNhanh.GetListAsync();
+                    ShowModalMessage = true;
+                    TextMessage = result.Message;
+                    ShowModalCreate = false;
+                }
+                else
+                {
+                    CheckMessage = false;
+                    TextMessage = result.Message;
+                    ShowModalMessage = true;
+                }
+            }
+            else
+            {
+                var chiNhanhId = await _localStorage.GetItemAsync<string>("chiNhanhId");
+                var result = await _chiNhanh.UpdateAsync(Int32.Parse(chiNhanhId), SelectChiNhanh);
+                if (result.IsSuccessed)
+                {
+                    await _localStorage.RemoveItemAsync("chiNhanhId");
+                    CheckAdd = true;
+                    CheckMessage = true;
+                    ChiNhanhDtos = await _chiNhanh.GetListAsync();
+                    ShowModalMessage = true;
+                    TextMessage = result.Message;
+                    ShowModalCreate = false;
+                }
+                else
+                {
+                    CheckMessage = false;
+                    TextMessage = result.Message;
+                    ShowModalMessage = true;
+                }
+            }
+
+        }
+        catch (Exception)
+        {
+            CheckMessage = false;
+            TextMessage = "Lỗi! Vui lòng liên hệ bộ phận kỹ thuật để được hỗ trợ.";
+            ShowModalMessage = true;
+        }
+        StateHasChanged();
+    }
+    private async Task CloseModalCreate()
+    {
+        ShowModalCreate = false;
+        CheckAdd = true;
+        await _localStorage.RemoveItemAsync("chiNhanhId");
+    }
+    private void Reset()
+    {
+        if (CheckAdd)
+        {
+            SelectChiNhanh = new ChiNhanhRequest();
+        }
+        else
+        {
+            SelectChiNhanh = new ChiNhanhRequest()
+            {
+                ChiNhanhUd = SelectChiNhanh.ChiNhanhUd
+            };
+        }
+
+        StateHasChanged();
+    }
+    private void CloseModalMessage()
+    {
+        ShowModalMessage = false;
+        CheckAdd = true;
+        CheckDelete = false;
+    }
+    private async void KiemTra()
+    {
+        await this.SfGridCN.SearchAsync(SelectChiNhanh.ChiNhanhUd);
+        ShowModalMessage = false;
+        StateHasChanged();
+    }
+    private async Task ConfirmDeleleAsync()
+    {
+        CheckDelete = false;
+        var selectedRecords = await SfGridCN.GetSelectedRecordsAsync();
+        if (selectedRecords.Count > 0)
+        {
+            var ids = new List<int?>();
+            foreach (var data in selectedRecords)
+                ids.Add(data.Id);
+            var result = await _chiNhanh.DeleteListAsync(ids);
+            if (result.IsSuccessed)
+            {
+                ChiNhanhDtos = await _chiNhanh.GetListAsync();
+                ShowModalMessage = false;
+            }
+            else
+            {
+                TextMessage = result.Message;
+                ShowModalMessage = true;
+                CheckMessage = false;
+            }
+        }
+        StateHasChanged();
+    }
+    public void PrintAsync()
+    {
+    }
+    public async Task RecordDoubleClickHandler(RecordDoubleClickEventArgs<ChiNhanhDto> args)
+    {
+        try
+        {
+            await _localStorage.SetItemAsync<string>("chiNhanhId", args.RowData.Id.ToString() ?? "");
+            CheckAdd = false;
+            SelectChiNhanh = new ChiNhanhRequest();
+            var chiNhanh = await _chiNhanh.GetByIdAsync(args.RowData.Id);
+            SelectChiNhanh = _objectMapper.Map<ChiNhanhDto, ChiNhanhRequest>(chiNhanh);
+            ShowModalCreate = true;
+
+
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.Message);
+            CheckAdd = true;
+            CheckMessage = false;
+            TextMessage = "Lỗi hệ thống! Vui lòng liên hệ bộ phận kỹ thuật để được hổ trợ.";
+            ShowModalMessage = true;
+        }
+
+        StateHasChanged();
+    }
+    private void ConvertToUpperCase(Microsoft.AspNetCore.Components.ChangeEventArgs args)
+    {
+        if (args.Value != null)
+        {
+            var text = args.Value.ToString();
+            if (text != null)
+                SelectChiNhanh.ChiNhanhUd = text.ToUpper();
+        }
+    }
+
+}
